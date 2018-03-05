@@ -1,0 +1,123 @@
+*--------------------------------------------
+*     Parameters of heat, mass and momentum 
+*         exchange of water, ice and snow.
+*
+*            Version 05.02.2016.
+*--------------------------------------------
+
+*     General constants.
+
+      Sice = 4.       ! Ice mean salinity, permille
+      sigma= 5.67e-5  ! Stefan-Bolzmann (SGS)
+      roa = 1.30e-3   ! Air density, g/cm3
+      row = 1.020     ! Water density, g/cm3
+      roi = 0.900     ! Ice density, g/cm3
+      rosdry = 0.30   ! Dry snow density, g/cm3
+      roswet = 0.45   ! Wet snow density, g/cm3
+      Tmelt_s= 0.     ! snow melting point, grad C
+      Tmelt_i= -0.1   ! Ice  melting point, grad C
+
+*     Emissivity of water, snow and ice AOMIP.
+      Ew= 0.97
+      Es= 0.99   
+      Ei= 0.97
+c      Es= 0.97 ! J. Kondo, H. Yamazawa. Measurement of snow surface emissivity
+*	         ! Boundary-Layer Meteorology March 1986, Volume 34,
+*			   ! Issue 4, pp 415-416
+*     Emissivity NCAR and LANL CICE
+c      Ew= 0.95
+c      Es= 0.95
+c      Ei= 0.95
+
+*     Open Water Albedo
+      aopw=0.10 ! AOMIP
+c      aopw=0.06  ! LANL, NCAR
+
+*     Penetrating into ocean radiation parameters (Jerlov clear water).
+c      Ra=0.58         ! Fraction of light frequency radiation
+c      dzi1=35.        ! Penetration of high frequency [cm]
+c      dzi2=2300.      ! Penetration of low frequency  [cm]
+*     Penetrating into ocean radiation parameters (Paulson&Simpson, 1977).
+      Ra=0.68         ! Fraction of light frequency radiation
+      dzi1=120.       ! Penetration of high frequency [cm]
+      dzi2=2800.      ! Penetration of low frequency  [cm]
+
+*     Penetrating into ice radiation parameterization.
+*      aI0= 0.17  ! P&W 1979
+*      aI0= 0.0    ! AWI
+
+*     Heat transfer coefficients erg/cm/K
+      cksnow=0.31 e5
+      ckice0=2.034e5
+
+*     Heat capacity and Heat of fusion.
+      Cpa= 1004.e4    ! Air spec. heat storage (mass) erg/g
+      Cpw= 4190.e4    ! Water spec. heat storage (mass) erg/g
+      Cpi= 2060.e4    ! Ice spec. heat storage (mass) erg/g
+      Qice=3.014e9    ! Heat of fusion, ice, erg/cm3
+      Qsnow=1.097e9   ! Heat of fusion, snow, erg/cm3
+      QLi=2.835e10    ! Latent heat of sublimation, erg/g
+      QLw=2.501e10    ! Latent heat of evaporation, erg/g
+
+*     Transfer coefficients for bulk formulas (heat and momentum).
+c      CDH= 1.2e-3 ! Sensible heat AOMIP
+c      CDL= 1.5e-3 ! Latent   heat AOMIP
+      CDw= 5.5e-3 ! Ice/water momentum AOMIP z=1 m, z0=5 mm
+*       CDw= 0.5    ! Bluff body for thick ice
+**      CDw= 0.1 
+**      CDw= 1.18e-2 ! New vertical grid, z=0.2m,z0= 0.5cm
+*      CDw= 2.0e-2  ! Tang, C., and D.Fissel, 1991: A simple ice-ocean  
+*                  ! coupled model for ice drift in marginal ice zones. 
+*                  ! J. Mar. Syst., 2, 465-475 
+c      CDw= 9.0e-3    ! Ice/water momentum, Steiner, 2001. 9e-3.
+
+*     Ice thickness categories. USSR classification (up to 2m)
+      hmax(0)=0.
+      hmax(1)=10.
+      hmax(2)=20.
+      hmax(3)=30.
+      hmax(4)=50.
+      hmax(5)=70.
+      hmax(6)=100.
+      hmax(7)=150.
+      hmax(8)=200.
+      hmax(9)=300.
+      hmax(10)=400.
+      hmax(11)=500.
+      hmax(12)=600.
+      hmax(13)=1000.
+      hmax(14)=90000.
+
+*     Ice Rheology
+*     Harder 1996 substitution method for
+*     modified elliptical rheology, used for EVP
+*     e=2, extr2=e**2
+*     Pcr=1.5e5  [dyn/cm2] - SIMIP Project.
+*     Pcr=2.75e5           - Hibler 1979.
+*     AWI Hi-Res model - 1.0e5
+*     dmin= 2.e-9 [sec-1] in the book by M. Harder,
+*     dmin=1.e-11 - Hunke, JCP
+      extr2=4.
+      Pcr=0.5e5 ! NOT USED
+      c0=20.    ! NOT USED
+      dmin=1.e-19
+
+*     Heat exchange coefficient for windless conditions-> W=1 m/s
+      E0= 1.0
+
+*     Ice compactness change due to side melting (be careful!): !! NOT USED NOW!
+      Cmelt= 2.5e-8    ! specific perimeter [1/s], (See Boulder IM)
+      
+*     Rate of leads closing, Hibler's 1979 H*, H=50cm,
+*     or Oberhuber's Hi - instanteneous ice, H= 1.
+*     LANL - 5. - now it's initial ice thickness
+      Href= 5.0
+
+*     Snow oldering and conversion to ice, 
+*     Oberhuber: 1e-7sec-1 - 115 days e-fold. 1 year = 3.17e-8.
+      GAMMA= 1.0e-7
+
+*     Cutoffs for ice and snow.
+      Himin= 1.e-9    ! Minimal ice mass (h*a)
+      Hsmin= 1.e-12   ! minimal snow mass. 3e-7cm=1cm/month
+      Aimin= 1.e-6    ! minimal compactness

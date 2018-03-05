@@ -1,0 +1,73 @@
+*     version 20.02.2015 high vertical resolution and FE-FCT for ice.
+*     methane CH4 module + O2 included +bio.
+*     Bottom Slope Cascading + convection under ice.
+*     Variable background viscosity/diffusion.
+*     delta_u - ice-ocean relative velocity.
+*     Arrays for Mellor-Yamada turbulence model q2turb and q2L.
+
+      parameter(il=35,jl=49,kl=40,klp=kl+1,ilp=il+2,jlp=jl+2)
+      parameter(il1=il+1,jl1=jl+1)
+      integer, parameter :: maxlay = 230, nlsno=5, nlice=5
+      parameter (mgrad=14)
+
+      common /c1/ u(0:il1,0:jl1,kl),v(0:il1,0:jl1,kl),w(0:il1,0:jl1,kl)
+     *          , ub(0:il1,0:jl1,kl)
+     *          , Q2Turb(0:il1,0:jl1,kl), Q2L(0:il1,0:jl1,kl)
+
+      common /c2/ t(0:il1,0:jl1,kl),s(0:il1,0:jl1,kl)
+     *           , ro(0:il1,0:jl1,kl)
+     *           , PBclin(0:il1,0:jl1,kl), RsT(0:il1,0:jl1,kl)
+     *           , tobs (0:il1,0:jl1,kl),sobs(0:il1,0:jl1,kl)
+     *           , RoPot(0:il1,0:jl1,kl)
+ccc     *           , tm2(0:il1,0:jl1,kl),sm2(0:il1,0:jl1,kl)
+     
+      common /c3/ wx(0:il1,0:jl1),wy(0:il1,0:jl1),km2(0:il1,0:jl1),
+     *            nt3(0:il1,0:jl1,kl),hz(kl), cg(13),KT(6,13)
+      common /c4/ um1(0:il1,0:jl1,kl), vm1(0:il1,0:jl1,kl)
+      common /c5/ um2(0:il1,0:jl1,kl), vm2(0:il1,0:jl1,kl)
+      common /c6/ sclamp(il,jl,kl)
+      common /c8/ dz(-1:ilp,-1:jlp), dzm(-1:ilp,-1:jlp),
+     *            dzext(il,jl),Pext(il,jl,kl)
+      common /d/ om,dt,hx,hy,r,g,si(0:jl1),co(0:il1) 
+     *          ,az(il,jl,kl), azt(il,jl,kl),azs(il,jl,kl), tscale(kl)
+     *          ,azbg(kl),aztbg(kl),azsbg(kl)
+      common /ser/ volume, ek(klp), ss(klp), z(klp),
+     #             serv2(il,jl,kl)
+      common /diag/ diag(19,il,jl)
+      common /ice/ Hice (0:mgrad,0:il1,0:jl1),
+     *             Hice1(0:mgrad,0:il1,0:jl1),
+     *             Hice2(0:mgrad,0:il1,0:jl1),
+     *             Tice(0:mgrad,0:il1,0:jl1),
+     *             TiceFE(0:mgrad,0:il1,0:jl1,0:nlice),
+     *             Aice (0:mgrad,0:il1,0:jl1),
+     *             Aice1(0:mgrad,0:il1,0:jl1),
+     *             Aice2(0:mgrad,0:il1,0:jl1), 
+     *             Hmax(0:mgrad), RSice(0:mgrad,il,jl)
+      common /icev/ uice(0:il1,0:jl1), vice(0:il1,0:jl1),
+     *              uice1(0:il1,0:jl1), vice1(0:il1,0:jl1),
+     *              uice2(0:il1,0:jl1), vice2(0:il1,0:jl1),
+     *              Pice(il,jl), ice_mask(0:il1,0:jl1), 
+     *              ice_mask_p(0:il1,0:jl1),
+     *              CDgwd(il,jl), ! gravity wave drag Ice-Ocean
+     *              delta_u(il,jl)
+      common /snow/ hsnow (0:mgrad,0:il1,0:jl1),
+     *              hsnow1(0:mgrad,0:il1,0:jl1),
+     *              hsnow2(0:mgrad,0:il1,0:jl1), 
+     *              Tsnow (0:mgrad,0:il1,0:jl1),
+     *              TsnowFE (0:mgrad,0:il1,0:jl1,1:nlsno)
+      common /NCEP/ PA(il,jl),TA(il,jl),SW(il,jl),
+     *              PR(il,jl),Q2m(il,jl),cloud(il,jl),
+     *              PME(il,jl),PME_dz(il,jl),River(il,jl),STWR(il,jl)
+      common /NEPT/ unept(0:il1,0:jl1), vnept(0:il1,0:jl1)
+      common /METH/ CH4(0:il1,0:jl1,kl),CH4obs(0:il1,0:jl1,kl), 
+     *              Flux_CH4_To_A(0:il1,0:jl1),
+     *              o2 (0:il1,0:jl1,kl),o2obs (0:il1,0:jl1,kl),
+     *              bio(0:il1,0:jl1,kl)
+      common /RIDGE/ delta_ice(il,jl), div_ice(il,jl), div_ice_tr(il,jl)
+     *             , sigma1(6,il,jl),sigma2(6,il,jl),sigma12(6,il,jl)
+     
+      common /Cascad/ QTc(il,jl,kl),QSc(il,jl,kl)
+      
+      real LH,KT
+      double precision dz, dzm, diag
+	common /exps/ exps1(kl), exps2(kl)
