@@ -278,7 +278,7 @@ c	if(i.eq.19.and.j.eq.5.and.k.eq.1) write(*,*)'init',Sclr1(i,j,k)
       RsT(I,J,KB)= dt*FT +dt*Qcascad(i,j,kb)
 
       if (i .eq. 16 .and. j .eq. 41) then
-         write(*,*) RsT(I,J,KB)
+         !write(*,*) RsT(I,J,KB)
       end if 
 *     First guess for mass matrix inversion
 cc	Sclr1(i,j,kb)= RsT(i,j,kb)/( r2s12*CG(n)*HZ(KB-1))

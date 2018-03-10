@@ -274,12 +274,12 @@ c     Saturation vapor pressure EPSs:
 
       if (i .eq. 16 .and. j .eq. 41) then
         Do k=1,kb
-            write(*,*) "T", T(i,j,k)
+            !write(*,*) "T", T(i,j,k)
         end do
-        write(*,*) "AM", AM
-        write(*,*) "BM", BM
-        write(*,*) "CM", CM
-        write(*,*) "FM", FM  
+        !write(*,*) "AM", AM
+        !write(*,*) "BM", BM
+        !write(*,*) "CM", CM
+        !write(*,*) "FM", FM  
       end if
       CALL FACTOR(KL,AM,BM,CM,FM,RKSI,1,KB)
       Do k=1,kb
@@ -292,7 +292,7 @@ c     Saturation vapor pressure EPSs:
       End do
       if (i .eq. 16 .and. j .eq. 41) then
         Do k=1,kb
-            write(*,*) "T", T(i,j,k)
+            !write(*,*) "T", T(i,j,k)
         end do
       end if
 
@@ -315,10 +315,13 @@ c      end if
 
       CALL IceTH(i,j,Wind,dHiceT,dHsnowT)
       if (dHiceT .ne. dHicet) then
-        write(*,*) "ij", i, j
-        end if
-      write(*,*) dHiceT, "dHiceT asasdasdasd"
-      write(*,*) dHsnowT, "dHsnowT"
+        !write(*,*) "ij", i, j, dHicet
+      end if
+      if (dHiceT > 100.) then
+        write(*,*) dHiceT, "dHiceT"
+      endif
+      !write(*,*) dHiceT, "dHiceT asasdasdasd"
+      !write(*,*) dHsnowT, "dHsnowT"
 
 *     Salinity changes if only snow melts dHsnowT<0.
       DHS= MIN(dHsnowT,0.)
@@ -378,8 +381,8 @@ c     Ridging
       if (RKSI(K) > 100000.) then
       write(*,*) RKSI(K), "RKSI(", K, ")", i, "i", j, "j"
       write(*,*) dHiceT, "dHiceT", S(i,j,k)
-      S(i,j,k)= MAX(0.,RKSI(K))
       endif
+      S(i,j,k)= MAX(0.,RKSI(K))
       End do
 
 
@@ -447,7 +450,7 @@ c     Flooding and aging with correspondent freshwater flux to ocean.
      &        hsnew, hinew, tm, sn, sume, heat_melt_to_ocean, 
      &        energy_ice_growth, tt1, tt2, xis, xib       
       integer :: iteration, maxiter = 50
-      real(8) tsu, tbo
+      real(8) tsu, tbo, ttt, ssss
       real(8) netlw, dwnlw, pres
       real(8) fac_transmi, swrad
       logical fixed_tb,melt_ts,melt_tb,panic
@@ -591,14 +594,17 @@ c	end if
       ENDDO
             
       do k=1,ns
-          tme(k)=-0.054*sali(k)
+          ssss=sali(k)
+          write(*,*) "sssss1", ssss
+          tme(k)=Tfreeze1(ssss) !-0.054*sali(k)
+          write(*,*) "tme(k)", tme(k)
       enddo
       
       do k=1,ni
         tt = 0.5d0*(tiold(k-1)+tiold(k)) 
         kice(k) = func_ki(sali(k),tt)
-        if (i .eq. 14 .and. j .eq. 1 .and. m .eq. 13) then
-         ! write(*,*) kice(k), "----", sali(k), tt, tseafrz, seasal
+        if (i .eq. 13 .and. j .eq. 6) then
+          !write(*,*) kice(k), "----", sali(k), tt, tseafrz, seasal
         end if 
       enddo
     !  write(*,*) kice(1), "kice(1)" 
@@ -629,12 +635,12 @@ c	end if
       endif
       !!!!!!!!!!!!!!!!!!!!!!!!
   !          sumrad=0.d0
-  !    DO k=lice_top,ni+1,-1
-  !       Rad(k) = swradab_s(ns-k+1)
-  !    ENDDO
-  !    DO k=ni,1,-1
-  !       Rad(k) = swradab_i(ni-k+1)
-  !    ENDDO
+      DO k=lice_top,ni+1,-1
+         Rad(k) = 1 !swradab_s(ns-k+1)
+      ENDDO
+      DO k=ni,1,-1
+         Rad(k) = 1 !swradab_i(ni-k+1)
+      ENDDO
   !    do k=1,lice_top
   !       sumrad = sumrad + rad(k)
   !    enddo!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -645,6 +651,8 @@ c	end if
           em(k) = func_el(tme(k),tt1)
       enddo
       
+      !sf= hs/(hs+2.)
+      
       
       tsu    = tiold(lice_top)
       !---------------------------------------------------------------------
@@ -652,15 +660,19 @@ c	end if
       !---------------------------------------------------------------------
 c     If snow is thin - one can see ice
 c     New ice temperature.
-      albedoi=F_ai(tsu,Hi)
+      ti = tsu
+      albedoi=F_ai(ti,Hi)
      
       tsu    = tiold(lice_top) + tzero
       RLW= -emi*sigma*((tsu)**4)*(0.39-0.005*sqrt(epsa))*
      &    (1.-0.8*cloud(i,j))
        !-4.*emi*sigma*(T0-Ta(i,j))*((273.16+T0)**3)
      
-      Qrad= ( sf*(1.-asnow)+
-     &       (1.-sf)*(1.-ai0)*(1.-albedoi) )*SW(i,j)
+      !Qrad= ( sf*(1.-asnow)+
+      !&       (1.-sf)*(1.-ai0)*(1.-albedoi) )*SW(i,j)
+      
+      Qrad= (1.-aI0)*(1.-albedoi)*SW(i,j)       
+
 
       
 c     Saturation vapor pressure EPSs:
@@ -811,23 +823,18 @@ c     Specific humidity at the surface Qs:
           tt1 = 0.5d0*(tiold(k-1)+tiold(k))
           tt2 = 0.5d0*(tinew(k-1)+tinew(k))
 
-          capa = func_cp ( tme(k), tt1, tt2)
+          ttt = tme(k)
+          write(*,*) "rere", ttt, tt1, tt2
+          capa = func_cp(ttt,tt1,tt2)
       !    cm(k)= capa ! needed?
           m1=heold(k)*re(k)/3.d0*capa
           m2=heold(k)*re(k)/6.d0*capa
-      !    write(*,*) m1, m2, "m1, m2"
-      !    write(*,*) heold(k),re(k),capa, "hrc"
           k1=dt/heold(k)*kice(k)
-      !    write(*,*) heold(1), "heold(1)"
-      !    write(*,*)  k1, "k1"
       !    km(k)=k1 ! needed?
-          rhs(k-1) =  rhs(k-1) + k1 *( tiold(k)-tiold(k-1))
-          
-          ! + 
-    ! & 0.5d0 * rad(k) * dtice
-          rhs(k)   =  rhs(k)   - k1 *( tiold(k)-tiold(k-1))
-          ! + 
-    ! & 0.5d0 * rad(k) * dtice
+          rhs(k-1) =  rhs(k-1) + k1 *( tiold(k)-tiold(k-1)) !+
+      !& 0.5d0 * rad(k) * dt
+          rhs(k)   =  rhs(k)   - k1 *( tiold(k)-tiold(k-1)) !+
+      !& 0.5d0 * rad(k) * dt
           
           w1=wmesh(k-1)*re(k)*dt
           w2=wmesh(k  )*re(k)*dt
@@ -840,9 +847,9 @@ c     Specific humidity at the surface Qs:
       !    rhs(k  ) =  rhs(k  ) + w2 * ( tinew(k) + tinew(k-1) )
 
           a  (k-1) =  a  (k-1) - k1 + m2 + w1
-          if (i .eq. 14 .and. j .eq. 1 .and. m .eq. 13) then
-          !  write(*,*) a(k-1), " on ", k-1, k1, kice(k), m2, w1, "----"
-          !  write(*,*) rhs(k), k1 *( tiold(k)-tiold(k-1)), w2, em(k)
+          if (i .eq. 13 .and. j .eq. 6) then
+           ! write(*,*) a(k-1), " on ", k-1, k1, kice(k), m2, w1, "----"
+            !write(*,*) rhs(k), k1 *( tiold(k)-tiold(k-1)), w2, em(k)
           end if 
 
           diagon(k-1)= diagon(k-1) + k1 + m1 + w1
@@ -897,7 +904,7 @@ c     Specific humidity at the surface Qs:
       
       !---------------------------------------------------------------------
       ! tri-diagonal solver call
-      if (i .eq. 13 .and. j .eq. 6) then
+      if (i .eq. 9 .and. j .eq. 47 .and. m .eq. 1) then
         do k=1,lice_top
             write(*,*) rhs(k), "rhs(", k, ")"
             write(*,*) a(k), "a(", k, ") "
@@ -917,14 +924,16 @@ c     Specific humidity at the surface Qs:
       !do mg=1,10
     !  if (i .eq. 14 .and. j .eq. 1 .and. m .eq. 13) then
      
+
+
       do k=1,lice_top
-        if (i .eq. 13 .and. j .eq. 6) then
+        if (i .eq. 9 .and. j .eq. 47 .and. m .eq. 1) then
             write(*,*) tinew(k),"tiNEW", k,i,j,m 
         end if
       enddo !1,lice_top
       do k=1,lice_top
-        if (i .eq. 16 .and. j .eq. 41) then
-          !  write(*,*) tiold(k),"tiOLD", k,i,j,m 
+        if (i .eq. 9 .and. j .eq. 47 .and. m .eq. 1) then
+            write(*,*) tiold(k),"tiOLD", k,i,j,m 
         end if
         !write(*,*) tiold(k),"tiOLD(", k,")" 
       enddo !1,lice_top
@@ -946,7 +955,9 @@ c     Specific humidity at the surface Qs:
       wmesh(k) = rhs(k)
       tinew(k) = tseafrz
       rhs  (k) = tinew(k) - tiold(k) ! needed for posterio diagnostic
-      
+      if (i .eq. 10 .and. j .eq. 46) then
+        !write(*,*) "wmesh(k)", wmesh(k)
+      end if
       
       !---------------------------------------------------------------------
       ! Calculation of ice and snow mass changes due to melting
@@ -1028,6 +1039,9 @@ c     Specific humidity at the surface Qs:
         dhi = ( wmesh(0 ) - wmesh(ni ) ) * dt
         dhs = ( 0.d0      - wmesh(ns ) ) * dt
 
+        if (i .eq. 9 .and. j .eq. 47 .and. m .eq. 1) then
+          write(*,*) "dhi", dhi, wmesh(ns ), wmesh(ni ), wmesh(0 )
+        end if
         hsnew = max(hsold+dhs,0.d0)
     !    write(*,*) hiold, "hiold", dhi, "dhi"
         hinew = hiold+dhi
@@ -1049,6 +1063,11 @@ c     Specific humidity at the surface Qs:
          tinew(k-1) = min(tinew(k-1),tme(k))
        enddo
 
+      do k=1,lice_top
+        if (i .eq. 10 .and. j .eq. 46) then
+            !write(*,*) tinew(k),"tttNEW", k,i,j,m 
+        end if
+      enddo
         maxvel=0.d0
         do k=0,lice_top
           maxvel=max(maxvel,abs(tinew(k)-timid(k)))
@@ -1123,7 +1142,7 @@ c     Specific humidity at the surface Qs:
       !endif
       
       if (i .eq. 13 .and. j .eq. 6) then
-        write(*,*) "hi", hi
+        !write(*,*) "hi", hi
       end if
       dHice = hi*Aice(m,i,j) - Hice (m,i,j)
       dHsnow = hs*Aice(m,i,j) - Hsnow(m,i,j)
@@ -1131,6 +1150,9 @@ c     Specific humidity at the surface Qs:
       Hsnow(m,i,j) = hs*Aice(m,i,j)
       
       dHiceT = dHiceT + dHice
+      if (dHice .ne. dHice) then
+        write(*,*) "mmmm", m, i, j
+      end if
       dHsnowT = dHsnowT + dHsnow
       
       do k=1,ni
@@ -1138,12 +1160,12 @@ c     Specific humidity at the surface Qs:
         enddo
 	if ( lice_top==ns ) then   
         do k=ni+1,ns
-          TsnowFE(m,i,j,k)= tinew(k)
+          TsnowFE(m,i,j,k-ni)= tinew(k)
         enddo
 	end if
 	
 	Tice(m,i,j) = TiceFE(m,i,j,1)
-	Tsnow(m,i,j) = TsnowFE(m,i,j,ni+1)
+	Tsnow(m,i,j) = TsnowFE(m,i,j,1)
       !do k=1,ni
       !    TiceFE(m,i,j,k)= 0.
       !enddo
@@ -1155,7 +1177,7 @@ c     Specific humidity at the surface Qs:
 	end if  ! ai(m) > 0
       enddo
       if (i .eq. 16 .and. j .eq. 41) then
-        write(*,*) "dHiceT", dHiceT
+        !write(*,*) "dHiceT", dHiceT
       end if
       
 	do m=1,mgrad
@@ -1168,18 +1190,18 @@ c	end if
       if(Hsnow(m,i,j).LT.Hsmin) then
 	Hsnow(m,i,j)=0.
 	do k=ni+1,ns
-          TsnowFE(m,i,j,k)=0.
+          TsnowFE(m,i,j,k-ni)=-3.
       enddo
 	end if
       if(Hice(m,i,j).LT.Himin) then
 	Hsnow(m,i,j)=0.
 	do k=ni+1,ns
-          TsnowFE(m,i,j,k)=0.
+          TsnowFE(m,i,j,k-ni)=-3.
       enddo
 	Hice(m,i,j) =0.
 	Aice(m,i,j) =0.
 	do k=1,ni
-          TiceFE(m,i,j,k)= 0.
+          TiceFE(m,i,j,k)= -3.
       enddo
 	end if
 
@@ -1407,7 +1429,6 @@ c      TFr=-0.0575*S+1.710523e-3*SQRT(S**3)-2.155e-4*S*S-7.53e-9*p
 cc	parameter (aow=0.06) ! NCAR, LANL
 
       T=min(0.,Ti)
-
 	if(T .LT. -1.0)then  ! -1C - see BoulderIce
 cc  	F_ai= MAX(aow, c11*SQRT(SQRT(0.01*h))+aow)
 cc      ai= MIN(1.,F_ai)
@@ -1499,26 +1520,29 @@ cc	F_as=0.77  ! New AOMIP, 15.05.2003
       return
 	end
 	
-	real(8) function Tfreeze1(ssss)
+	real function Tfreeze1(ssss)
 	
-        a=-0.054d0
+	real(8) ssss
+	real(8) :: a = -0.054d0
+	  write(*,*) ssss
         Tfreeze1=ssss*a
+      return
+      end
 
-      end function Tfreeze1
+      real FUNCTION func_cp(ttt,tt1,tt2)
+      
+      real(8) ttt, tt1, tt2
+      !real(8) :: cp_ice = 2.062e+03_8
+      !real(8) :: mlfus     = 3.335e+05_8
+      !real(8) :: TT
 
-      FUNCTION func_cp(Tf,T1,T2)
-
-      implicit none
-      real(8)  func_cp, T1, T2, Tf
-      real(8) :: cp_ice = 2.062e+03_8
-      real(8) :: mlfus     = 3.335e+05_8
-      real(8) :: TT
-
-      TT = MIN ( T1, -1d-10 ) * MIN ( T2, -1d-10 )
-      func_cp = cp_ice
-      !MIN( cp_ice - mlfus * Tf / TT, 1d9 )
-
-      END FUNCTION func_cp
+      write(*,*) "T", ttt, tt1, tt2
+      !TT = MIN ( , -1d-10 ) * MIN ( tt2, -1d-10 )
+      
+      func_cp = 2.062e+03_8 !cp_ice
+      !MIN( cp_ice - mlfus * ttt / TT, 1d9 )
+      return
+      END
       
       FUNCTION func_qmelt(Tf,T)
 

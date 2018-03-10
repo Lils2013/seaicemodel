@@ -1059,10 +1059,10 @@ c      write(*,*) 'Convection = ', QTctotal, QSctotal
 
       kb=km2(16,41)
       Do k=1,kb
-          write(*,*) "Tbeforeadvect3D", T(16,41,k)      
+          !!write(*,*) "Tbeforeadvect3D", T(16,41,k)      
       end do
       Do k=1,kb
-        write(*,*) "Tobs", Tobs(16,41,k)
+        !!write(*,*) "Tobs", Tobs(16,41,k)
       end do
       Sclr2= T
 	Sclr1= 0.
@@ -1073,7 +1073,7 @@ c      write(*,*) 'Convection = ', QTctotal, QSctotal
 
       kb=km2(16,41)
       Do k=1,kb
-          write(*,*) "Tafteradvect3D", T(16,41,k)
+          !!write(*,*) "Tafteradvect3D", T(16,41,k)
       end do
 
       Sclr2= S
@@ -1192,7 +1192,7 @@ c     ============ Sea-Level Elevation Problem
       
       kb=km2(16,41)
         Do k=1,kb
-            write(*,*) "Trside", T(16,41,k)
+            !write(*,*) "Trside", T(16,41,k)
         end do
       !write(*,*) "rs", rs
       call dzcal4(dz,rs,diag,km2,adz,il,jl,il1,jl1,ilp,jlp,maxite,

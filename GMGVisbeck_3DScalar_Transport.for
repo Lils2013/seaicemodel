@@ -105,7 +105,7 @@ c     Triangle # 2.
 	end do  !  k
 
       if (i .eq. 16 .and. j .eq. 41) then
-        write(*,*) "Depth", Depth, Agm(1,i,j)
+       ! write(*,*) "Depth", Depth, Agm(1,i,j)
       end if
 	Agm(1,i,j)= alpha*aLength2_1*Agm(1,i,j)/Depth
 	Agm(2,i,j)= alpha*aLength2_2*Agm(2,i,j)/Depth

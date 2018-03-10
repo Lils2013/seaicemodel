@@ -212,7 +212,7 @@ c      endif
       uz2= az(i,j,k)*( (u(i,j,kp)-u(i,j,k ))/hzk )**2 
       vz2= az(i,j,k)*( (v(i,j,kp)-v(i,j,k ))/hzk )**2 
       if (i .eq. 11 .and. j .eq. 1) then
-        write(*,*) "uz2", uz2, vz2, az(i,j,k), u(i,j,kp), hzk
+        !write(*,*) "uz2", uz2, vz2, az(i,j,k), u(i,j,kp), hzk
       end if
       VS= uz2 + vz2
 
@@ -294,7 +294,7 @@ c      endif
       BM(k)= 1.-CM(k)-AM(k) +Pminus
       FM(k)= q2turb(i,j,k)  +Pplus
       if (i .eq. 11 .and. j .eq. 1) then
-        write(*,*) "q2turb(i,j,k)", q2turb(i,j,k), Prod, Buoy
+        !write(*,*) "q2turb(i,j,k)", q2turb(i,j,k), Prod, Buoy
       end if
       
 	Pplus = cL(k)*(E1*Prod - E3*Buoy)
@@ -363,13 +363,13 @@ c      endif
       
       do k=1,kb
       if (rksi(k) .ne. rksi(k)) then
-        write(*,*) rksi(k), "rksi(k)"
+        !write(*,*) rksi(k), "rksi(k)"
       end if
       q2turb(i,j,k)= MAX(1.e-4,rksi(k))
       end do
       
       if (i .eq. 11 .and. j .eq. 1) then
-        write(*,*) "matr", fm
+        !write(*,*) "matr", fm
       end if
 
       Rksi=0.
@@ -437,8 +437,8 @@ c      end if
       AzT(i,j,k)= cLz*SFs*SQRT(turb) + AZTbg(k)
       AzS(i,j,k)= AZS_to_AZT * cLz*SFs*SQRT(turb) + AZTbg(k)
       if (AzT(i,j,k) .ne. AzT(i,j,k)) then
-         write(*,*) AzT(i,j,k), "AzT(i,j,k)", i, j, k
-         write(*,*) cLz, SFs, SQRT(turb), AZTbg(k), q2turb(i,j,k)
+         !write(*,*) AzT(i,j,k), "AzT(i,j,k)", i, j, k
+         !write(*,*) cLz, SFs, SQRT(turb), AZTbg(k), q2turb(i,j,k)
       end if
             
 
