@@ -16,6 +16,10 @@
       roswet = 0.45   ! Wet snow density, g/cm3
       Tmelt_s= 0.     ! snow melting point, grad C
       Tmelt_i= -0.1   ! Ice  melting point, grad C
+      rho2  = 1.275         !  density of dry air (kg/m3)
+      cp    = 1005.         !  heat capacity of dry air (J/kg.K)
+      tzero  = 273.15
+      pres = 10000
 
 *     Emissivity of water, snow and ice AOMIP.
       Ew= 0.97
@@ -58,6 +62,7 @@ c      dzi2=2300.      ! Penetration of low frequency  [cm]
       Qsnow=1.097e9   ! Heat of fusion, snow, erg/cm3
       QLi=2.835e10    ! Latent heat of sublimation, erg/g
       QLw=2.501e10    ! Latent heat of evaporation, erg/g
+      lv    = 2.501e+6      !  latent heat of vaporization (J/kg)
 
 *     Transfer coefficients for bulk formulas (heat and momentum).
 c      CDH= 1.2e-3 ! Sensible heat AOMIP

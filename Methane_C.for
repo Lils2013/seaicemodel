@@ -392,7 +392,7 @@ cccc      read (30,rec=1) ice_mask_p
               TiceFE(mg,i,j,k) = Tice(mg,i,j)
               if (Tice(mg,i,j)<-50) then
                 !write(*,*) Tice(mg,i,j), "tice"
-              !  TiceFE(mg,i,j,k)=-3
+                TiceFE(mg,i,j,k)=-3
               endif
               if (Tice(mg,i,j)>-0.000001) then
                  TiceFE(mg,i,j,k) = -3
@@ -401,12 +401,12 @@ cccc      read (30,rec=1) ice_mask_p
             do k = 1,nlsno
             if (Tsnow(mg,i,j)<-50) then
                ! write(*,*) Tsnow(mg,i,j), "tsn"
-                TsnowFE(mg,i,j,k)=-3
-              endif
-              TsnowFE(mg,i,j,k) = Tsnow(mg,i,j)
-              if (Tsnow(mg,i,j)>-0.000001) then
+                TsnowFE(mg,i,j,k)=-15
+              else if (Tsnow(mg,i,j)>-0.000001) then
                  TsnowFE(mg,i,j,k) = -3
-                 endif
+                 else
+              TsnowFE(mg,i,j,k) = Tsnow(mg,i,j)
+              endif
             enddo
           enddo
         enddo
@@ -1200,10 +1200,6 @@ c     ============ Sea-Level Elevation Problem
      
 *     =====  Ocean Velocity-Pressure Adjustment (Due to Level)
       call dzvel !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      
-      write(*,*) "----------------------", nst
-      !write(*,*) "u", u
-      write(*,*) "----------------------" 
 
 c      write(*,*) 'U + grad Dz'
 c      call maxu
