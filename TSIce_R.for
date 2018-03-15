@@ -415,7 +415,7 @@ c     Flooding and aging with correspondent freshwater flux to ocean.
 	real(8) :: tzero  = 273.15d0
       real(8), dimension(0:maxlay) :: rhs, a, b, diagon, wmesh, wold, 
      & a1,b1,c1,d1
-      real(8) tseafrz, q0, fsens
+      real(8) tseafrz, q0, fsens, CTb
       real(8)  sstz, bshf, Fnet, dzf, fwf, 
      & es, zrchu1,zrchu2,zref,zssdqw
       real(8), dimension(0:maxlay) :: tiold, tinew, timid, ziold
@@ -636,10 +636,10 @@ c	end if
       endif
       sumrad=0.d0
       DO k=lice_top,ni+1,-1
-         Rad(k) = k/20. !swradab_s(ns-k+1)
+         Rad(k) = 0. !k/20. !swradab_s(ns-k+1)
       ENDDO
       DO k=ni,1,-1
-         Rad(k) = k/20. !swradab_i(ni-k+1)
+         Rad(k) = 0. !k/20. !swradab_i(ni-k+1)
       ENDDO
       do k=1,lice_top
          sumrad = sumrad + rad(k)
@@ -698,10 +698,18 @@ c     Latent Heat:
       dzf    =  4.d0*emi*stefa*((tsu)**3) +
      &     + rho2*cp*CDH(tsu,TA(i,j))*(wind/100.)
      &     +rho2*lv*CDL(tsu,TA(i,j))*(wind/100.)*zssdqw
-
+     
+      if (i .eq. 22 .and. j .eq. 42 .and. m .eq. 4) then
+          !write(*,*) "tsu",  4.d0*emi*stefa*((tsu)**3), 
+      !&     rho2,cp,CDH(tsu,TA(i,j)),(wind/100.),
+      !&       rho2*lv*CDL(tsu,TA(i,j))*(wind/100.)*zssdqw
+        end if
       swrad = 0.
       ! surface atmospheric net flux
       fsens=-rho2*cp*CDH(tsu,TA(i,j))*(wind/100.)*(tsu-(TA(i,j)+tzero))
+      if (i .eq. 19 .and. j .eq. 19 .and. m .eq. 8) then 
+        !write(*,*) "sens", wind, tsu, TA(i,j), netlw
+      end if
       Fnet=netlw + fsens
       !fac_transmi * swrad + netlw + fsens + flat
       !roa*Cpa*CDH(tsu,TA(i,j))*wind*(TA(i,j)-tsu)+RLW + Qrad +LH
@@ -780,7 +788,14 @@ c     Specific humidity at the surface Qs:
       endif ! end thin snow
 !---------------------------------------------------------------------
 
-      bshf = -5.
+	ppp= 1.e-5*g*row*Hi 
+      TFC= TFr(S(i,j,1), ppp) ! Freezing point at the depth of ice bottom
+
+      TW= MAX(TFC,T(i,j,1))     ! If T<TFC - ice formation
+      TW = -1.7
+      CTb=7.27e-3
+      Qiw= row*cpw*CTb*(TW-TFC)
+      bshf =-4. !-Qiw/10000.
       
       !-----------------------------------------------------------------------
       !     Update energy flux due to snow precipitation
@@ -878,10 +893,15 @@ c     Specific humidity at the surface Qs:
       ! add BCs:
       rhs(0       )= rhs(0       ) - dt * bshf
       !write(*,*) "bshf", bshf
-      rhs(lice_top)= rhs(lice_top) + dt * Fnet ! - energy_snow_melt
+      rhs(lice_top)= rhs(lice_top) + dt * Fnet - energy_snow_melt
       !write(*,*) "Fnet", Fnet ,"energy_snow_melt", energy_snow_melt
       flux2= 0.d0
 
+      if (i .eq. 26 .and. j .eq. 39 .and. m .eq. 1) then
+          write(*,*) "theta_ther * dt * dzf", dzf
+          write(*,*) "bshf", bshf
+          write(*,*) "Fnet", Fnet ,"energy_snow_melt", energy_snow_melt
+        end if
       k=1
         tinew(k-1) = tseafrz ! keep basal temperature at sea temperature
         sum0 = em(k) * re(k) * dt
@@ -926,7 +946,7 @@ c     Specific humidity at the surface Qs:
       
       !---------------------------------------------------------------------
       ! tri-diagonal solver call
-      if (i .eq. 9 .and. j .eq. 47 .and. m .eq. 1) then
+      if (i .eq. 20 .and. j .eq. 18 .and. m .eq. 1) then
         do k=1,lice_top
             !write(*,*) rhs(k), "rhs(", k, ")"
             !write(*,*) a(k), "a(", k, ") "
@@ -976,13 +996,13 @@ c     Specific humidity at the surface Qs:
       endif
       
       
-      do k=1,lice_top
+      do k=0,lice_top
         if (i .eq. 26 .and. j .eq. 39 .and. m .eq. 1) then
-            write(*,*) tinew(k),"tiNEW", k,i,j,m 
+            !write(*,*) tinew(k),"tiNEW", k,i,j,m 
         end if
       enddo !1,lice_top
-      do k=1,lice_top
-        if (i .eq. 9 .and. j .eq. 47 .and. m .eq. 1) then
+      do k=0,lice_top
+        if (i .eq. 26 .and. j .eq. 39 .and. m .eq. 1) then
             !write(*,*) tiold(k),"tiOLD", k,i,j,m 
         end if
       enddo !1,lice_top
@@ -1053,8 +1073,18 @@ c     Specific humidity at the surface Qs:
         dhi = ( wmesh(0 ) - wmesh(ni ) ) * dt
         dhs = ( 0.d0      - wmesh(ns ) ) * dt
 
-        if (i .eq. 9 .and. j .eq. 47 .and. m .eq. 1) then
-          !write(*,*) "dhi", dhi, wmesh(ns ), wmesh(ni ), wmesh(0 )
+        if (i .eq. 26 .and. j .eq. 39 .and. m .eq. 1) then
+          write(*,*) "dhi", dhi, wmesh(ns ), wmesh(ni ), wmesh(0 )
+        end if
+        if (-dhs < -hsold) then
+            write(*,*) "dhs < hsold", dhs, hsold
+            hsnew=0
+        end if
+        if (-dhi < -hiold) then
+        write(*,*) "dhi < hiold", dhi, hiold, wmesh(0 )
+            hsnew=0
+            hinew=0
+            exit
         end if
         hsnew = max(hsold+dhs,0.d0)
     !    write(*,*) hiold, "hiold", dhi, "dhi"
@@ -1157,14 +1187,21 @@ c     Specific humidity at the surface Qs:
       
       if (i .eq. 26 .and. j .eq. 39 .and. m .eq. 1) then
         write(*,*) "hi", hi, m, i, j
+        write(*,*) "hs", hs, m, i, j
       end if
       dHice = hi*Aice(m,i,j) - Hice (m,i,j)
       dHsnow = hs*Aice(m,i,j) - Hsnow(m,i,j)
+
       Hice (m,i,j) = hi*Aice(m,i,j)
       Hsnow(m,i,j) = hs*Aice(m,i,j)
       
       dHiceT = dHiceT + dHice
-      if (dHice .ne. dHice) then
+      if (i .eq. 26 .and. j .eq. 39 .and. m .eq. 1) then 
+        write(*,*) "dHice", dHice
+        write(*,*) "dHsnow", dHsnow
+      end if
+      if (dHice .ne. dHice .or. dHice .gt. 1000 
+     & .or. dHice .lt. -1000) then
         write(*,*) "mmmm", m, i, j
       end if
       dHsnowT = dHsnowT + dHsnow
@@ -1506,31 +1543,31 @@ cc	F_as=0.77  ! New AOMIP, 15.05.2003
 	return
 	end 
 
-	Real Function CDH(T,TA)
+	Real Function CDH(tsu,TA)
 *     version 17.12.2009. Regularisation for sections method.
-	if(T.GT.TA+1.0) then
+	!if(tsu.GT.TA+1.0) then
 	CDH=1.75e-3       ! Unstable boundary layer, Makshtas, SP-23.
-	else
-	  if(T.LT.TA-1.0) then
-        CDH=1.2e-3      ! Stable boundary layer, AOMIP
-        else
-        CDH=1.2e-3 +0.5*(T-TA+1.0)*0.55e-3 ! Transition case
-	  end if
-	end if
+	!else
+	!  if(tsu.LT.TA-1.0) then
+      !  CDH=1.2e-3      ! Stable boundary layer, AOMIP
+      !  else
+      !  CDH=1.2e-3 +0.5*(tsu-TA+1.0)*0.55e-3 ! Transition case
+	!  end if
+	!end if
       return
 	end
 	
-	Real Function CDL(T,TA)
+	Real Function CDL(tsu,TA)
 *     version 17.12.2009. Regularisation for sections method.
-	if(T.GT.TA+1.0) then
+	!if(tsu.GT.TA+1.0) then
 	CDL=1.75e-3       ! Unstable boundary layer, Makshtas, SP-23.
-	else      
-	  if(T.LT.TA-1.0) then
-        CDL=1.5e-3      ! Stable boundary layer, AOMIP
-        else
-        CDL=1.5e-3 +0.5*(T-TA+1.0)*0.25e-3 ! Transition case
-	  end if
-      end if
+	!else      
+	!  if(tsu.LT.TA-1.0) then
+      !  CDL=1.5e-3      ! Stable boundary layer, AOMIP
+      !  else
+      !  CDL=1.5e-3 +0.5*(tsu-TA+1.0)*0.25e-3 ! Transition case
+	!  end if
+      !end if
       return
 	end
 	
