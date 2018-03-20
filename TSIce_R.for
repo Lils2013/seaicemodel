@@ -421,7 +421,7 @@ c     Flooding and aging with correspondent freshwater flux to ocean.
       real(8), dimension(0:maxlay) :: tiold, tinew, timid, ziold
       integer ni,ns
       real(8) :: hslim=0.0005d0
-      integer    lice_top
+      integer    lice_top, layer
       real(8), dimension(maxlay) :: kice,
      &        he, heold, henew,
      &        re, tme, dhe, 
@@ -441,8 +441,8 @@ c     Flooding and aging with correspondent freshwater flux to ocean.
      &        bi        =-265.5
        real(8) ftot2, sume2, flux2, pi, energy_snow_melt, 
      &       sublimation_speed, bottom_speed, rom
-      real(8) dzi(maxlay)
-      real(8) dzs(maxlay)
+      real(8) dzi(maxlay), dzi_sw(maxlay)
+      real(8) dzs(maxlay), dzs_sw(maxlay)
       real(8), dimension  (maxlay) :: dziold
       real(8) blhf, 
      &     submer_is, hdraft, sice, dhi, dhs, dq, 
@@ -464,9 +464,11 @@ c     Flooding and aging with correspondent freshwater flux to ocean.
       logical :: energy_check=.false., thin_snow_active, debug=.false.
       real(8) :: cheat=4.2174d3*1.025d3
       real(8) dh_sni
-      real(8) zi(0:maxlay)
+      real(8) zi(0:maxlay), radtr_s(0:maxlay), radab_s(0:maxlay)
+      real(8) radtr_i(0:maxlay), radab_phy_i(0:maxlay)
+      real(8) ftrice, ab, isnow, zzs, zraext_i, zdummy
       include 'Tparm.fi'
-            
+
       ni=nlice
       ns=ni+nlsno
            
@@ -630,16 +632,73 @@ c	end if
       dhe = 0.d0
       dhs = 0.d0
       
+      do k=1,ni
+       dzi_sw(ni-k+1) = dziold(k) * hiold
+      enddo
+      do k=ni+1,ns
+        dzs(ns-k+1) = dziold(k) * hsold
+        if (dzs(ns-k+1) .eq. 0.) then
+            !write(*,*) "dzs(ns-k+1)", dziold(k), hs
+            end if
+      enddo
+      
       lice_top=ni
       if (hsold > hslim ) then
           lice_top=ns
+          isnow = 1.
+          else 
+          isnow = 0.
       endif
+      
+ !     ab(ji) = 1.0 - ( 1.0 - isnow ) * rad_inot_i - isnow * rad_inot_s
+      ab = 1.0 - ( 1.0 - isnow ) * 0.30 - isnow * 0.15
+!     ab(ji) = 1.0 - ( 1.0 - isnow ) * 0.30 - isnow * 0.
+      ! Bitz and Lipscomb (1999)
+!     ab(ji) = 1.0 - 0.30 / ( 10.0 * ht_s_b(ji) + 1.0 ) 
+
+      !-----------------------------------------------------
+      ! Solar radiation transmitted below the surface layer
+      !-----------------------------------------------------
+      ftrice      =  SW(i,j) * ( 1.0 - ab) / 100.
+      radtr_s(0) =  ftrice
+      zzs = 0.0
+      DO layer = 1, nlsno
+      if (ftrice .gt. 0) then
+        !write(*,*) zzs, "zzs"
+        end if
+         zzs = zzs + dzs(layer)/100
+         radtr_s(layer) = radtr_s(0) * exp( - 5.8*( MAX( 0.0 ,
+     &                    zzs ) ) )
+         radab_s(layer) = radtr_s(layer-1) - radtr_s(layer)
+      END DO
+      
+      radtr_i(0) = isnow * radtr_s(nlsno)  + ( 1. - isnow ) * ftrice
+      zzs = 0.0
+      DO layer = 1, nlice
+            if (ftrice .gt. 0) then
+        !write(*,*) zzs, "zzs"
+        end if
+         zzs = zzs + dzi_sw(layer)/100
+         radtr_i(layer) = radtr_i(0) * exp( - 0.80*( MAX( 0.0 ,
+     &                    zzs ) ) )
+         radab_phy_i(layer) = radtr_i(layer-1) - radtr_i(layer)
+      END DO
+      
+      
       sumrad=0.d0
       DO k=lice_top,ni+1,-1
-         Rad(k) = 0. !k/20. !swradab_s(ns-k+1)
+         Rad(k) = radab_s(ns-k+1) !k/20. !swradab_s(ns-k+1)
+        if (i .eq. 13 .and. j .eq. 1 .and. 
+     &  m .eq. 1 .and. Rad(k) .gt. 0.) then
+       ! write(*,*) "Rad(k) snow", Rad(k), k
+      end if
       ENDDO
       DO k=ni,1,-1
-         Rad(k) = 0. !k/20. !swradab_i(ni-k+1)
+         Rad(k) = radab_phy_i(ni-k+1) !k/20. !swradab_i(ni-k+1)
+         if (i .eq. 13 .and. j .eq. 1 .and. 
+     &  m .eq. 1 .and. Rad(k) .gt. 0.) then
+       ! write(*,*) "Rad(k) ice", Rad(k), k
+      end if
       ENDDO
       do k=1,lice_top
          sumrad = sumrad + rad(k)
@@ -710,7 +769,7 @@ c     Latent Heat:
       if (i .eq. 19 .and. j .eq. 19 .and. m .eq. 8) then 
         !write(*,*) "sens", wind, tsu, TA(i,j), netlw
       end if
-      Fnet=netlw + fsens
+      Fnet=netlw + fsens + 5
       !fac_transmi * swrad + netlw + fsens + flat
       !roa*Cpa*CDH(tsu,TA(i,j))*wind*(TA(i,j)-tsu)+RLW + Qrad +LH
       
@@ -795,7 +854,7 @@ c     Specific humidity at the surface Qs:
       TW = -1.7
       CTb=7.27e-3
       Qiw= row*cpw*CTb*(TW-TFC)
-      bshf =-4. !-Qiw/10000.
+      bshf = 0 !-4. !-Qiw/10000.
       
       !-----------------------------------------------------------------------
       !     Update energy flux due to snow precipitation
@@ -898,9 +957,9 @@ c     Specific humidity at the surface Qs:
       flux2= 0.d0
 
       if (i .eq. 26 .and. j .eq. 39 .and. m .eq. 1) then
-          write(*,*) "theta_ther * dt * dzf", dzf
-          write(*,*) "bshf", bshf
-          write(*,*) "Fnet", Fnet ,"energy_snow_melt", energy_snow_melt
+          !write(*,*) "theta_ther * dt * dzf", dzf
+          !write(*,*) "bshf", bshf
+          !write(*,*) "Fnet", Fnet ,"energy_snow_melt", energy_snow_melt
         end if
       k=1
         tinew(k-1) = tseafrz ! keep basal temperature at sea temperature
@@ -997,13 +1056,13 @@ c     Specific humidity at the surface Qs:
       
       
       do k=0,lice_top
-        if (i .eq. 26 .and. j .eq. 39 .and. m .eq. 1) then
-            !write(*,*) tinew(k),"tiNEW", k,i,j,m 
+        if (i .eq. 26 .and. j .eq. 10 .and. m .eq. 1) then
+         !   write(*,*) tinew(k),"tiNEW", k,i,j,m 
         end if
       enddo !1,lice_top
       do k=0,lice_top
-        if (i .eq. 26 .and. j .eq. 39 .and. m .eq. 1) then
-            !write(*,*) tiold(k),"tiOLD", k,i,j,m 
+        if (i .eq. 26 .and. j .eq. 10 .and. m .eq. 1) then
+         !   write(*,*) tiold(k),"tiOLD", k,i,j,m 
         end if
       enddo !1,lice_top
       !---------------------------------------------------------------------
@@ -1073,15 +1132,15 @@ c     Specific humidity at the surface Qs:
         dhi = ( wmesh(0 ) - wmesh(ni ) ) * dt
         dhs = ( 0.d0      - wmesh(ns ) ) * dt
 
-        if (i .eq. 26 .and. j .eq. 39 .and. m .eq. 1) then
-          write(*,*) "dhi", dhi, wmesh(ns ), wmesh(ni ), wmesh(0 )
+        if (i .eq. 13 .and. j .eq. 1 .and. m .eq. 1) then
+          !write(*,*) "dhi", dhi, wmesh(ns ), wmesh(ni ), wmesh(0 )
         end if
-        if (-dhs < -hsold) then
-            write(*,*) "dhs < hsold", dhs, hsold
+        if (-dhs > hsold) then
+            write(*,*) "-dhs > hsold", dhs, hsold
             hsnew=0
         end if
-        if (-dhi < -hiold) then
-        write(*,*) "dhi < hiold", dhi, hiold, wmesh(0 )
+        if (-dhi > hiold) then
+        write(*,*) "-dhi > hiold", dhi, hiold, wmesh(0 )
             hsnew=0
             hinew=0
             exit
@@ -1185,7 +1244,7 @@ c     Specific humidity at the surface Qs:
       ! hs  = hs - dh_sni
       !endif
       
-      if (i .eq. 26 .and. j .eq. 39 .and. m .eq. 1) then
+      if (i .eq. 26 .and. j .eq. 10 .and. m .eq. 1) then
         write(*,*) "hi", hi, m, i, j
         write(*,*) "hs", hs, m, i, j
       end if
@@ -1196,7 +1255,7 @@ c     Specific humidity at the surface Qs:
       Hsnow(m,i,j) = hs*Aice(m,i,j)
       
       dHiceT = dHiceT + dHice
-      if (i .eq. 26 .and. j .eq. 39 .and. m .eq. 1) then 
+      if (i .eq. 26 .and. j .eq. 10 .and. m .eq. 1) then 
         write(*,*) "dHice", dHice
         write(*,*) "dHsnow", dHsnow
       end if
@@ -1291,9 +1350,13 @@ c     Heat of fusion is less factor 0.92 because
 c     of brine pockets at the ice bottom - 
 c     see Los Alamos Ice Model, Bitz & Limpscomb 1999.
 
-      ! dHiceN=dHiceN + 
-      !*1.087*Cpw*row*vol*(TFC-T(i,j,k))/Qice/cg(abs(nt3(i,j,1)))
-     
+      dHiceN=dHiceN + 
+     * 1.087*Cpw*row*vol*(TFC-T(i,j,k))/Qice/cg(abs(nt3(i,j,1)))
+ 
+         
+      if (dHiceN .gt. 1) then
+       ! write(*,*) "TFC", TFC, T(i,j,k), i, j, k
+      end if
 *     New ocean temperature    
       T(i,j,k)= TFC
       
@@ -1307,7 +1370,14 @@ c     see Los Alamos Ice Model, Bitz & Limpscomb 1999.
       end if  ! T<TFC
       end do  ! k=1,kb loop
 
+      if (aice(0,i,j) .gt. 0.9) then
+        !write(*,*) "aice(0,i,j)", aice(0,i,j)
+      end if
 	IF(dHiceN .GT. 0.) then
+
+      if (dHiceN .GT. 10) then
+        dHiceN = 10
+      end if
 
 c     In a case of sufficient open water: frazil ice to the open water.
 	hhh0= dHiceN/MAX(aimin,aice(0,i,j))
@@ -1325,7 +1395,12 @@ c     New ice temperature - for T in situ only!
    !!!!   Q= (Tice(1,i,j)+TFC)*Hice(1,i,j)/2. +TFC*dHiceN*Aice(1,i,j)
       Q= (TiceFE(1,i,j,1)+TFC)*Hice(1,i,j)/2. +TFC*dHiceN*Aice(1,i,j)
       do k=1,ni
-          TiceFE(1,i,j,k)= Q/Hice(1,i,j)
+        if (TiceFE(1,i,j,k) .eq. 0.) then
+            TiceFE(1,i,j,k)= (min(Q/Hice(1,i,j), -2.))
+            end if
+          if (i .eq. 26 .and. j .eq. 10 .and. m .eq. 1) then 
+       ! write(*,*) "TiceFE(1,i,j,k)", TiceFE(1,i,j,k)
+      end if
       enddo
   !!!    Tice(1,i,j)=Q/Hice(1,i,j)
 !   Tsnow(1,i,j)=-10.
@@ -1344,9 +1419,14 @@ c     if no sufficient open water
 
 c     New ice temperature - for T in situ only! Should be corrected
   !    Q= (Tice(1,i,j)+TFC)*Hice(1,i,j)/2. +TFC*dHiceN*Aice(1,i,j)
-      Q= (TiceFE(1,i,j,1)+TFC)*Hice(1,i,j)/2. +TFC*dHiceN*Aice(1,i,j)
+      Q= (TiceFE(1,i,j,k) +TFC)*Hice(1,i,j)/2. +TFC*dHiceN*Aice(1,i,j)
       do k=1,ni
-          TiceFE(1,i,j,k)= Q/Hice(1,i,j)
+      if (TiceFE(1,i,j,k) .eq. 0.) then
+            TiceFE(1,i,j,k)= (min(Q/Hice(1,i,j), -2.))
+            end if
+          if (i .eq. 26 .and. j .eq. 10 .and. m .eq. 1) then 
+       ! write(*,*) "TiceFE(1,i,j,k)", TiceFE(1,i,j,k)
+      end if
       enddo
    !   Tice(1,i,j)=Q/Hice(1,i,j)
    !   Tsnow(1,i,j)=-10.
@@ -1361,7 +1441,7 @@ c     New ice temperature - for T in situ only! Should be corrected
 	end if
 
       dHiceT= dHiceT + dHiceN
-      write(*,*) "!!!!!!!!!!!!!!!dHiceT", dHiceT, "dHiceN", dHiceN
+      !write(*,*) "!!!!!!!!!!!!!!!dHiceT", dHiceT, "dHiceN", dHiceN
 
 	end if !dHiceN .GT. 0.
 

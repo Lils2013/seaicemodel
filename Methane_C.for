@@ -939,10 +939,10 @@ c	end do
 
 	uice2= uice
 	vice2= vice
-	!call ice_inertion(1) !можно закоментить
+	call ice_inertion(1) !можно закоментить
 	uice1= uice
 	vice1= vice
-	!call ice_inertion(2) !можно закоментить
+	call ice_inertion(2) !можно закоментить
 
 	uice2= uice
 	vice2= vice
