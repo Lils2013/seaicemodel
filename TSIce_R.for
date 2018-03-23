@@ -659,7 +659,7 @@ c	end if
       !-----------------------------------------------------
       ! Solar radiation transmitted below the surface layer
       !-----------------------------------------------------
-      ftrice      =  SW(i,j) * ( 1.0 - ab) / 100.
+      ftrice      =  SW(i,j) * ( 1.0 - ab) !/ 10.
       radtr_s(0) =  ftrice
       zzs = 0.0
       DO layer = 1, nlsno
@@ -769,7 +769,7 @@ c     Latent Heat:
       if (i .eq. 19 .and. j .eq. 19 .and. m .eq. 8) then 
         !write(*,*) "sens", wind, tsu, TA(i,j), netlw
       end if
-      Fnet=netlw + fsens + 5
+      Fnet=netlw + fsens !+ 5
       !fac_transmi * swrad + netlw + fsens + flat
       !roa*Cpa*CDH(tsu,TA(i,j))*wind*(TA(i,j)-tsu)+RLW + Qrad +LH
       
@@ -1300,18 +1300,19 @@ c	end if
       if(Hsnow(m,i,j).LT.Hsmin) then
 	Hsnow(m,i,j)=0.
 	do k=ni+1,ns
-          TsnowFE(m,i,j,k-ni)=-3.
+          TsnowFE(m,i,j,k-ni)=tme(k)
       enddo
 	end if
       if(Hice(m,i,j).LT.Himin) then
+      !write(*,*) "Hice(m,i,j).LT.Himin", Hice(m,i,j), m, i, j
 	Hsnow(m,i,j)=0.
 	do k=ni+1,ns
-          TsnowFE(m,i,j,k-ni)=-3.
+          TsnowFE(m,i,j,k-ni)=tme(k)
       enddo
 	Hice(m,i,j) =0.
 	Aice(m,i,j) =0.
 	do k=1,ni
-          TiceFE(m,i,j,k)= -3.
+          TiceFE(m,i,j,k)= tme(k)
       enddo
 	end if
 
@@ -1396,7 +1397,7 @@ c     New ice temperature - for T in situ only!
       Q= (TiceFE(1,i,j,1)+TFC)*Hice(1,i,j)/2. +TFC*dHiceN*Aice(1,i,j)
       do k=1,ni
         if (TiceFE(1,i,j,k) .eq. 0.) then
-            TiceFE(1,i,j,k)= (min(Q/Hice(1,i,j), -2.))
+       !     TiceFE(1,i,j,k)= (min(Q/Hice(1,i,j), -2.))
             end if
           if (i .eq. 26 .and. j .eq. 10 .and. m .eq. 1) then 
        ! write(*,*) "TiceFE(1,i,j,k)", TiceFE(1,i,j,k)
@@ -1422,7 +1423,7 @@ c     New ice temperature - for T in situ only! Should be corrected
       Q= (TiceFE(1,i,j,k) +TFC)*Hice(1,i,j)/2. +TFC*dHiceN*Aice(1,i,j)
       do k=1,ni
       if (TiceFE(1,i,j,k) .eq. 0.) then
-            TiceFE(1,i,j,k)= (min(Q/Hice(1,i,j), -2.))
+          !  TiceFE(1,i,j,k)= (min(Q/Hice(1,i,j), -2.))
             end if
           if (i .eq. 26 .and. j .eq. 10 .and. m .eq. 1) then 
        ! write(*,*) "TiceFE(1,i,j,k)", TiceFE(1,i,j,k)

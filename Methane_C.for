@@ -332,6 +332,8 @@ c     Ice Data
      *      form='unformatted',recl=nna)
 c      open (unit=30,file=imask,status='old',access='direct',
 c     *      form='unformatted',recl=nn)
+      open (unit=205,file="area.txt",action="write",
+     * status="old")
 	 
 
 c     Neptune components      
@@ -937,93 +939,94 @@ c	end do
 
 *     ============== Sea Ice Dynamics ==========================
 
-	uice2= uice
-	vice2= vice
-	call ice_inertion(1) !ìîæíî çàêîìåíòèòü
-	uice1= uice
-	vice1= vice
-	call ice_inertion(2) !ìîæíî çàêîìåíòèòü
-
-	uice2= uice
-	vice2= vice
-
-      call ice_dyn_evp(INT(dt/30.))  !!! 30 seconds internal time step
-
-
-c     Ice/Snow Advection  
-
-*     Divergence - used for sea ice drift.
-
-      div_ice_tr= 0.0
-	do j=1,jl
-      do i=1,il
-	if(km2(i,j).GT.0) then
-      do mg=0,mgrad
-      div_ice_tr(i,j)= div_ice_tr(i,j)+aice(mg,i,j)
-      end do 
-	end if
-	end do
-	end do
-
-      Hice2 =Hice 
-      Hsnow2=Hsnow
-      Aice2 = Aice
-      
-      call iceadvect(0.15,Aice,Aice1,Aice2,uice,vice,
-     *RSice,ice_mask,nt3,si,KT,il,jl,il1,jl1,kl,0,mgrad,r,hx,hy,dt)
-     
-      call iceadvect(0.2,Hice,Hice1,Hice2,uice,vice,
-     *RSice,ice_mask,nt3,si,KT,il,jl,il1,jl1,kl,1,mgrad,r,hx,hy,dt)
-
-      call iceadvect(0.2,Hsnow,Hsnow1,Hsnow2,uice,vice,
-     *RSice,ice_mask,nt3,si,KT,il,jl,il1,jl1,kl,1,mgrad,r,hx,hy,dt)
-     
-      
-
-c     Small & negative values cut-off
-
-	do mg=1,mgrad
-	do j=1,jl
-	do i=1,il
-	if(km2(i,j).GT.0) then
-
-      if(Hsnow(mg,i,j) .LT. Hsmin) then
-	Hsnow(mg,i,j)= 0.
-	Tsnow(mg,i,j)= 0.
-	end if
-
-      if(Aice(mg,i,j).LT.aimin .OR. Hice(mg,i,j).LT.Himin) then
-	Aice (mg,i,j) =0.
-	Hice (mg,i,j) =0.
-	Tice (mg,i,j) =0.
-	Hsnow(mg,i,j) =0.
-	Tsnow(mg,i,j) =0.
-	end if
-	 
-	end if  ! km2>0
-	end do  ! i
-	end do  ! j
-	end do  ! mg
-
-*     Divergence - used for sea ice drift.
-	do j=1,jl
-      do i=1,il
-	if(km2(i,j).GT.0) then
-      do mg=0,mgrad
-      div_ice_tr(i,j)= div_ice_tr(i,j)-aice(mg,i,j)
-      end do 
-	div_ice_tr(i,j)= div_ice_tr(i,j)/dt
-	end if
-	end do
-	end do
-
+      !ÇÀÊÎÌÅÍ×ÅÍÀ ÄÈÍÀÌÈÊÀ ËÜÄÀ
+!	uice2= uice
+!	vice2= vice
+!	call ice_inertion(1) !ìîæíî çàêîìåíòèòü
+!	uice1= uice
+!	vice1= vice
+!	call ice_inertion(2) !ìîæíî çàêîìåíòèòü
+!
+!	uice2= uice
+!	vice2= vice
+!
+!      call ice_dyn_evp(INT(dt/30.))  !!! 30 seconds internal time step
+!
+!
+!c     Ice/Snow Advection  
+!
+!*     Divergence - used for sea ice drift.
+!
+!      div_ice_tr= 0.0
+!	do j=1,jl
+!      do i=1,il
+!	if(km2(i,j).GT.0) then
+!      do mg=0,mgrad
+!      div_ice_tr(i,j)= div_ice_tr(i,j)+aice(mg,i,j)
+!      end do 
+!	end if
+!	end do
+!	end do
+!
+!      Hice2 =Hice 
+!      Hsnow2=Hsnow
+!      Aice2 = Aice
+!      
+!      call iceadvect(0.15,Aice,Aice1,Aice2,uice,vice,
+!     *RSice,ice_mask,nt3,si,KT,il,jl,il1,jl1,kl,0,mgrad,r,hx,hy,dt)
+!     
+!      call iceadvect(0.2,Hice,Hice1,Hice2,uice,vice,
+!     *RSice,ice_mask,nt3,si,KT,il,jl,il1,jl1,kl,1,mgrad,r,hx,hy,dt)
+!
+!      call iceadvect(0.2,Hsnow,Hsnow1,Hsnow2,uice,vice,
+!     *RSice,ice_mask,nt3,si,KT,il,jl,il1,jl1,kl,1,mgrad,r,hx,hy,dt)
+!     
+!      
+!
+!c     Small & negative values cut-off
+!
+!	do mg=1,mgrad
+!	do j=1,jl
+!	do i=1,il
+!	if(km2(i,j).GT.0) then
+!
+!      if(Hsnow(mg,i,j) .LT. Hsmin) then
+!	Hsnow(mg,i,j)= 0.
+!	Tsnow(mg,i,j)= 0.
+!	end if
+!
+!      if(Aice(mg,i,j).LT.aimin .OR. Hice(mg,i,j).LT.Himin) then
+!	Aice (mg,i,j) =0.
+!	Hice (mg,i,j) =0.
+!	Tice (mg,i,j) =0.
+!	Hsnow(mg,i,j) =0.
+!	Tsnow(mg,i,j) =0.
+!	end if
+!	 
+!	end if  ! km2>0
+!	end do  ! i
+!	end do  ! j
+!	end do  ! mg
+!
+!*     Divergence - used for sea ice drift.
+!	do j=1,jl
+!      do i=1,il
+!	if(km2(i,j).GT.0) then
+!      do mg=0,mgrad
+!      div_ice_tr(i,j)= div_ice_tr(i,j)-aice(mg,i,j)
+!      end do 
+!	div_ice_tr(i,j)= div_ice_tr(i,j)/dt
+!	end if
+!	end do
+!	end do
+      !ÇÀÊÎÌÅÍ×ÅÍÀ ËÜÄÀ
 
 c     Ice categories redistribution
-c      Call Rebin
+      Call Rebin               !áûëî çàêîìåí÷åíî
 
 c     Ridging and Ice Strength
       
-      Call Redis
+!!!      Call Redis
 
 
 
@@ -1380,6 +1383,33 @@ c     Monthly means.
 
       
 	END DO  ! steps
+	
+		Cmetric=hx*hy*R*R*1.e-10
+      area= 0.
+      apn = 0.
+
+      do j=1,jl1-1
+      s0=si(j)
+      do i=1,il1-1
+	mark= ABS(nt3(i,j,1))
+      if( mark.GT.0) then
+
+      asum=0.
+      do m=1,mgrad
+      asum=asum+Aice(m,i,j)
+      end do
+
+c     Only ice with compactness > 0.15 - Barry et. al., 1983.???
+c     Data on compactness shows us values of 0.1
+    !    if(asum .GT. 0.10) then 
+	  area= area + s0*cg(mark)*asum
+!	  end if
+      end if  ! mark>0
+      end do  ! i
+      end do  ! j
+
+      area = 0.166667*Cmetric*area
+      write(205,*) area,iYear,imonth
 	END DO  ! days
 
 	cc= 24.*FLOAT(MEC(imonth))/dthr
