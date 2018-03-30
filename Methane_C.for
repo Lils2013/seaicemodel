@@ -401,15 +401,18 @@ cccc      read (30,rec=1) ice_mask_p
                  endif
             enddo
             do k = 1,nlsno
-            if (Tsnow(mg,i,j)<-50) then
+                if (Tsnow(mg,i,j)<-50) then
                ! write(*,*) Tsnow(mg,i,j), "tsn"
-                TsnowFE(mg,i,j,k)=-15
-              else if (Tsnow(mg,i,j)>-0.000001) then
-                 TsnowFE(mg,i,j,k) = -3
-                 else
-              TsnowFE(mg,i,j,k) = Tsnow(mg,i,j)
-              endif
+                    TsnowFE(mg,i,j,k)=-15
+                else if (Tsnow(mg,i,j)>-0.000001) then
+                    TsnowFE(mg,i,j,k) = -10
+                else
+                    TsnowFE(mg,i,j,k) =  -10 !!!!!!!!!!!!Tsnow(mg,i,j)
+                endif
             enddo
+            if (i .eq. 24 .and. j .eq. 12 .and. mg .eq. 8) then
+                write(*,*) "TsnowInit", Tsnow(mg,i,j), mg,i,j
+            end if
           enddo
         enddo
       enddo
