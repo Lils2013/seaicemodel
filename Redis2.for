@@ -69,6 +69,12 @@ c     To next thicker category.
       qi(mg)= 0.
       qs(mg+1)=qs(mg+1)+qs(mg)
       qs(mg)= 0.
+      do k=1,ni
+          TiceFE(mg+1,i,j,k)=TiceFE(mg,i,j,k)
+      enddo
+      do k=ni+1,ns
+          TsnowFE(mg+1,i,j,k-ni)=TsnowFE(mg,i,j,k-ni)
+      enddo
       end if
       end do
 
@@ -85,6 +91,12 @@ c     To next thinner category.
       qi(mg)= 0.
       qs(mg-1)=qs(mg-1)+qs(mg)
       qs(mg)= 0.
+      do k=1,ni
+          TiceFE(mg-1,i,j,k)=TiceFE(mg,i,j,k)
+      enddo
+      do k=ni+1,ns
+          TsnowFE(mg-1,i,j,k-ni)=TsnowFE(mg,i,j,k-ni)
+      enddo
       end if
       end do
 

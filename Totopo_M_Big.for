@@ -208,6 +208,10 @@
       Hi= Hi +Hice(m,i,j)
       Hs= Hs +Hsnow(m,i,j)
       Ai= Ai+Aice(m,i,j)
+            if (i .eq. 12 .and. j .eq. 44) then
+            write(*,*) "Aice", Aice(m,i,j), i,j,m 
+            write(*,*) "hi", hi
+        end if
       end do
 
 c     Mean Thickness in the point.

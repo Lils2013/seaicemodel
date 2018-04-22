@@ -415,7 +415,7 @@ c     Flooding and aging with correspondent freshwater flux to ocean.
 	real(8) :: tzero  = 273.15d0
       real(8), dimension(0:maxlay) :: rhs, a, b, diagon, wmesh, wold, 
      & a1,b1,c1,d1
-      real(8) tseafrz, q0, fsens, CTb
+      real(8) tseafrz, q0, fsens, CTb, flat
       real(8)  sstz, bshf, Fnet, dzf, fwf, 
      & es, zrchu1,zrchu2,zref,zssdqw
       real(8), dimension(0:maxlay) :: tiold, tinew, timid, ziold
@@ -462,8 +462,8 @@ c     Flooding and aging with correspondent freshwater flux to ocean.
       logical fixed_tb,melt_ts,melt_tb,panic
       real(8) Fprec, ssnow ! heat flux due to precipitation [W/m2]
       real(8) tair, qair, uair
-      logical :: energy_check=.false., thin_snow_active, debug=.false.
-      logical please_stop, melted
+      logical :: energy_check=.false., debug=.false.
+      logical please_stop, melted, thin_snow_active
       real(8) :: cheat=4.2174d3*1.025d3
       real(8) dh_sni, deltaz_i_phy(0:maxlay)
       real(8) zi(0:maxlay), radtr_s(0:maxlay), radab_s(0:maxlay)
@@ -491,15 +491,7 @@ c     Flooding and aging with correspondent freshwater flux to ocean.
       ziold =  zi
       dziold = dzi
       
-      bottom_speed       = 0.d0
-      energy_snow_melt   = 0.d0
-      heat_melt_to_ocean = 0.d0
-      melt_ts=.false. 
-      thin_snow_active =.false. 
-      fwf=0.d0
-      theta_ther=1.d0 
-      snosub = 1 !!!!!!!!!!!!!!!!!!!
-      fac_transmi = 1
+      
       
       dHiceT = 0.
       dHsnowT= 0.
@@ -516,6 +508,16 @@ c     Atmosphere vapor pressure epsa:
 c     1. Old snow and ice.
 
       do m=1,mgrad
+      
+      bottom_speed       = 0.d0
+      energy_snow_melt   = 0.d0
+      heat_melt_to_ocean = 0.d0
+      melt_ts=.false. 
+      thin_snow_active =.false. 
+      fwf=0.d0
+      theta_ther=1.d0 
+      snosub = 0 !!!!!!!!!!!!!!!!!!!
+      fac_transmi = 1
 
       dHsnow =0.
       dHice  =0.
@@ -530,9 +532,9 @@ c     1. Old snow and ice.
          end if
       if( aice(m,i,j) .GT. Aimin) then
 
-      Hi= Hice(m,i,j)/aice(m,i,j)
-	ppp= 1.e-5*g*row*Hi                   
-      TFC= TFr(S(i,j,1), ppp) ! Freezing point at the depth of ice bottom
+      Hi= (Hice(m,i,j)/aice(m,i,j))/100.
+	!ppp= 1.e-5*g*row*Hi                   
+      !TFC= TFr(S(i,j,1), ppp) ! Freezing point at the depth of ice bottom
 
 *     T,S dependent conductivity
 c      c2= (ckice0 +2.*0.117e5*SaIce(hi,S(i,j,1))/(Tice(m,i,j)+TFC))/Hi
@@ -584,7 +586,8 @@ c	end if
       enddo
       do k=ni+1,ns
         tiold(k) = TsnowFE(m,i,j,k-ni)
-        if (Hsnow(m,i,j) .gt. 0. .and. tiold(k) .eq. 0.) then
+        if (Hsnow(m,i,j) .gt. 0. .and. tiold(k) .eq. 0. .and. 
+     &k .ne. ns) then
             tiold(k) = -10 !!!!!!1Tsnow(m,i,j)
         end if
       enddo
@@ -627,8 +630,8 @@ c	end if
       !---------------------------------------------------------------------
 
       !if (hi.gt.hminice) then
-      hsold=Hsnow(m,i,j)/(aice(m,i,j))
-      hiold=Hice(m,i,j)/(aice(m,i,j))
+      hsold=(Hsnow(m,i,j)/(aice(m,i,j)))/100.
+      hiold=(Hice(m,i,j)/(aice(m,i,j)))/100.
       
       heold(   1:ni)=hiold*dzi(   1:ni)
       heold(ni+1:ns)=hsold*dzi(ni+1:ns)
@@ -661,14 +664,14 @@ c	end if
       !-----------------------------------------------------
       ! Solar radiation transmitted below the surface layer
       !-----------------------------------------------------
-      ftrice      =  SW(i,j) * ( 1.0 - ab) / 10000.
+      ftrice      =  (SW(i,j)) * ( 1.0 - ab) / 10000.
       radtr_s(0) =  ftrice
       zzs = 0.0
       DO layer = 1, nlsno
       if (ftrice .gt. 0) then
         !write(*,*) zzs, "zzs"
         end if
-         zzs = zzs + dzs(layer)/100
+         zzs = zzs + dzs(layer)
          radtr_s(layer) = radtr_s(0) * exp( - 5.8*( MAX( 0.0 ,
      &                    zzs ) ) )
          radab_s(layer) = radtr_s(layer-1) - radtr_s(layer)
@@ -692,8 +695,8 @@ c	end if
          ! extinction coefficient
          ! layer thickness
          zdummy    = radtr_i(layer-1) * 
-     &               EXP ( - rad_kappa_i * dzi_sw(layer)/100 ) *
-     &               dzi_sw(layer)/100
+     &               EXP ( - rad_kappa_i * dzi_sw(layer)) *
+     &               dzi_sw(layer)
 
          ! physicallay absorbed
          radab_phy_i(layer) = ( rad_kappa_i )
@@ -705,14 +708,14 @@ c	end if
       sumrad=0.d0
       DO k=lice_top,ni+1,-1
          Rad(k) = radab_s(ns-k+1) !k/20. !swradab_s(ns-k+1)
-        if (i .eq. 34 .and. j .eq. 43 .and. m .eq. 12
+        if (i .eq. 9 .and. j .eq. 43 .and. m .eq. 14
      &  .and. Rad(k) .ne. 0.) then
         write(*,*) "Rad(k) snow", Rad(k), k
       end if
       ENDDO
       DO k=ni,1,-1
          Rad(k) = radab_phy_i(ni-k+1) !k/20. !swradab_i(ni-k+1)
-         if (i .eq. 34 .and. j .eq. 43 .and. m .eq. 12
+         if (i .eq. 9 .and. j .eq. 43 .and. m .eq. 14
      &  .and. Rad(k) .ne. 0.) then
         write(*,*) "Rad(k) ice", Rad(k), k
       end if
@@ -735,28 +738,32 @@ c     If snow is thin - one can see ice
 c     New ice temperature.
       ti = tiold(lice_top)
       tsu    = tiold(lice_top) + tzero
-      albedoi=F_ai(ti,Hi)
-     
-      RLW= -emi*sigma*((tsu)**4)*(0.39-0.005*sqrt(epsa))*
-     &    (1.-0.8*cloud(i,j))
-       !-4.*emi*sigma*(T0-Ta(i,j))*((273.16+T0)**3)
+      albedoi=F_ai(ti,Hi*100)
+
      
       !Qrad= ( sf*(1.-asnow)+
       !&       (1.-sf)*(1.-ai0)*(1.-albedoi) )*SW(i,j)
       
-      Qrad= (1.-aI0)*(1.-albedoi)*SW(i,j)/1000       
+      Qrad= (1.-aI0)*(1.-albedoi)*(SW(i,j))/10000       
 
 
       
 c     Saturation vapor pressure EPSs:
-      EPSs=10.**( (0.7859+0.03477*tsu)/(1+0.00412*tsu)+0.00422*tsu+2.)
+      EPSs=10.**( (0.7859+0.03477*ti)/(1+0.00412*ti)+0.00422*ti+2.)
 c     Specific humidity at the surface Qs.
 	Qs=0.622*EPSs/Pa(i,j)
 c     Latent Heat:
 	LH=-roa*QLi*CDL(tsu,TA(i,j))*wind*(Qs-Q2m(i,j))
       ! net longwave radiative flux
+      
+      epsa=Q2m(i,j)*Pa(i,j)/0.622
+      
+      RLW= -emi*stefa*((273.16+ti)**4)*(0.39-0.005*sqrt(epsa))*
+     &   (1.-0.8*cloud(i,j))-4.*emi*stefa*(ti-Ta(i,j))*((273.16+ti)**3)
+      
       dwnlw=200.
         netlw = emi*(dwnlw - stefa*tsu*tsu*tsu*tsu)
+        netlw = RLW
       
       ! pressure of water vapor saturation (Pa)
       es         =  611.d0*10.d0**(9.5d0*(tsu-273.16d0)/(tsu-7.66d0))
@@ -771,20 +778,29 @@ c     Latent Heat:
      &     + rho2*cp*CDH(tsu,TA(i,j))*(wind/100.)
      &     +rho2*lv*CDL(tsu,TA(i,j))*(wind/100.)*zssdqw
      
-      if (i .eq. 22 .and. j .eq. 42 .and. m .eq. 4) then
+      if (i .eq. 9 .and. j .eq. 43 .and. m .eq. 14) then
           !write(*,*) "tsu",  4.d0*emi*stefa*((tsu)**3), 
       !&     rho2,cp,CDH(tsu,TA(i,j)),(wind/100.),
       !&       rho2*lv*CDL(tsu,TA(i,j))*(wind/100.)*zssdqw
         end if
       ! surface atmospheric net flux
+!      if (tsu-(TA(i,j)+tzero) .lt. -5.) then
+!        fsens=-rho2*cp*CDH(tsu,TA(i,j))*(wind/100.)*(-5)
+!      else if (tsu-(TA(i,j)+tzero) .gt. 5.) then
+!        fsens=-rho2*cp*CDH(tsu,TA(i,j))*(wind/100.)*(5)
+!        else
+!       fsens=-rho2*cp*CDH(tsu,TA(i,j))*(wind/100.)*(tsu-(TA(i,j)+tzero))
+!      end if
       fsens=-rho2*cp*CDH(tsu,TA(i,j))*(wind/100.)*(tsu-(TA(i,j)+tzero))
-      if (i .eq. 19 .and. j .eq. 19 .and. m .eq. 8) then 
-        !write(*,*) "sens", wind, tsu, TA(i,j), netlw
-      end if
-      Fnet=netlw + fsens + SW(i,j) * ab/10000.
-      if (i .eq. 34 .and. j .eq. 43 .and. m .eq. 12) then
+      flat= rho2*lv*CDL(tsu,TA(i,j))*(wind/100.)*(q0-Q2m(i,j))
+      flat   =  MIN( -flat , 0.d0 )
+      Fnet=(SW(i,j)) * ab/10000. + (netlw + fsens + flat)/100.
+      if (i .eq. 9 .and. j .eq. 43 .and. m .eq. 14) then
         write(*,*) "SW", SW(i,j) * ab, SW(i,j), ab
-        write(*,*) "fsens",fsens, netlw
+        write(*,*) "fsens", fsens,
+     &roa*Cpa*CDH(tsu,TA(i,j))*wind*(tzero+TA(i,j)-tsu)
+        write(*,*) "netlw", netlw, RLW
+        write(*,*) "flat", flat, q0, Q2m(i,j)
         write(*,*) "hiold, hsold", hiold, hsold
         write(*,*) "TSNOW", Tsnow(m,i,j)
       end if
@@ -797,85 +813,96 @@ c     Latent Heat:
       ! accumulation at the surface
       !---------------------------------------------------------------------
       if (TA(i,j) < 0.0 ) then
-        snow_precip = row*Pr(i,j)*Aice(m,i,j)/rosdry
+        snow_precip = row*Pr(i,j)*Aice(m,i,j)/(rosdry*1000.)
         rain_precip = 0.d0
       else
         snow_precip = 0.d0
-        rain_precip = Pr(i,j)*Aice(m,i,j)
+        rain_precip = Pr(i,j)*Aice(m,i,j)/1000.
       endif
-      if (i .eq. 34 .and. j .eq. 43 .and. m .eq. 12) then
-        write(*,*) "precip", snow_precip, rain_precip
-        end if
+      if (i .eq. 9 .and. j .eq. 43 .and. m .eq. 14) then
+        write(*,*) "precip",snow_precip,rain_precip,Pr(i,j),Aice(m,i,j)
+      end if
 
    !   fwf = fwf + rain_precip ! add liquid precipitation to the freshwater flux to ocean
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      
-            
-c     Sublimation
-        if(Hice(m,i,j).GT.0.) then
-c     Saturation vapor pressure EPSs:
-          T0= tiold(lice_top)
-          EPSs=10.**( (0.7859+0.03477*T0)/(1+0.00412*T0)+0.00422*T0+2.)
-c     Specific humidity at the surface Qs:
-	    Qs=0.622*EPSs/Pa(i,j)
-	    Sublim= -roa*CDL(T0,TA(i,j))*wind*(Qs-Q2m(i,j))/rosdry
-	  end if
+
       !---------------------------------------------------------------------
       ! need to get rid of snow if too thin during melting/sublimating
       ! thin snow case
       !---------------------------------------------------------------------
-!!       if ( hsold <= hslim ) then
-!!
-!!      ! then 1- compute total energy in snow
-!!      !      2- if Fnet>0, we assume that we can use some of the heat flux to melt the thin snow
-!!      !      3- if Fnet<=0,we assume that some of the sublimation can be used to sublimate the snow
-!!
-!!        sume2 = 0.d0
-!!        do k=ni+1,ns
-!!          sume2 = sume2 + em(k) * re(k) * heold(k)
-!!        enddo
-!!
-!!        if ( Fnet > 0.d0 ) then ! use Fnet if positive
-!!
-!!          energy_snow_melt = min( - sume2, Fnet * dt )! energy (negative) required to melt the thin snow (in entirity if Fnet large enough)
-!!          dhs = 0.d0
-!!          if ( hsold > 0.d0 ) then
-!!            dhs = energy_snow_melt / sume2 * hsold ! melted snow thickness (negative)
-!!          endif
-!!          snow_precip = 0.d0
-!!
-!!        else !sublimation can be used too
-!!
-!!!!          sume2 = sume2 - latvap * re(k) * hsold ! the snow needs to be sublimated, so the total required energy of melting is higher!
-!!!!      dq=max(sume2,LH*dt*Sublim*(re(lice_top)*(-em(lice_top)+latvap))) ! negative energy required to sublimate the thin snow (in entirity if flat large enough, partial otherwise)
-!!!!          if ( hsold > 0.d0 ) then
-!!!!            dhs = snow_precip * dt - dq / sume2 * hsold
-!!!!          else
-!!!!            dhs = snow_precip * dt
-!!!!          endif
-!!!!      ! recalculate the top flux
-!!!!          LH =  LH - dq / dt ! (-dq>0 so this is in effect reducing the latent heat)
-!!!!          Fnet =  Fnet - dq / dt ! (-dq>0 so this is in effect reducing the latent heat)
-!!
-!!        endif
-!!
-!!!!        thin_snow_active = .true.
-!!
-!!! new velocity at the snow-air interface
-!!        wmesh(ns) = - dhs / dt
-!!      
-!!!---------------------------------------------------------------------
-!!      endif ! end thin snow
-!!!---------------------------------------------------------------------
+       if ( hsold <= hslim ) then
+       
+       if (i .eq. 9 .and. j .eq. 43 .and. m .eq. 14) then
+        write(*,*) "hsold <= hslim", hsold, hslim 
+      end if
+      ! then 1- compute total energy in snow
+      !      2- if Fnet>0, we assume that we can use some of the heat flux to melt the thin snow
+      !      3- if Fnet<=0,we assume that some of the sublimation can be used to sublimate the snow
 
-	ppp= 1.e-5*g*row*Hi 
-      TFC= TFr(S(i,j,1), ppp) ! Freezing point at the depth of ice bottom
+        sume2 = 0.d0
+        do k=ni+1,ns
+          sume2 = sume2 + em(k) * re(k) * heold(k)
+        enddo
 
-      TW= MAX(TFC,T(i,j,1))     ! If T<TFC - ice formation
-      TW = -1.7
-      CTb=7.27e-3
+        if ( Fnet > 0.d0 ) then ! use Fnet if positive
+
+          energy_snow_melt = min( - sume2, Fnet * dt )! energy (negative) required to melt the thin snow (in entirity if Fnet large enough)
+          dhs = 0.d0
+          if ( hsold > 0.d0 ) then
+            dhs = energy_snow_melt / sume2 * hsold ! melted snow thickness (negative)
+          endif
+          snow_precip = 0.d0
+
+        else !sublimation can be used too
+
+          sume2 = sume2 - latvap * re(k) * hsold ! the snow needs to be sublimated, so the total required energy of melting is higher!
+          dq=max(sume2,flat*dt*snosub) ! negative energy required to sublimate the thin snow (in entirity if flat large enough, partial otherwise)
+          if ( hsold > 0.d0 ) then
+            dhs = snow_precip * dt - dq / sume2 * hsold
+          else
+            dhs = snow_precip * dt
+          endif
+      ! recalculate the top flux
+          Flat =  Flat - dq / dt ! (-dq>0 so this is in effect reducing the latent heat)
+          Fnet =  Fnet - dq / dt ! (-dq>0 so this is in effect reducing the latent heat)
+
+        endif
+
+        thin_snow_active = .true.
+
+! new velocity at the snow-air interface
+        wmesh(ns) = - dhs / dt
+      
+!---------------------------------------------------------------------
+      endif ! end thin snow
+!---------------------------------------------------------------------
+
+      ! sublimation at the surface
+      sublimation_speed = snosub * flat/(re(lice_top)
+     &*(-em(lice_top)+latvap))
+
+	ppp= 1.e-5*g*row*Hi*100.
+       ! Freezing point at the depth of ice bottom
+
+          ! If T<TFC - ice formation
+      TW = -1.5
+      TFC = tseafrz
+      
+!     Friction velocity
+      u_star=SQRT(CDw)*delta_u(i,j)
+	u_star=MAX(1.e-2, u_star)
+
+	CTb=6.0e-3*u_star 
+	CTb=7.27e-3 
       Qiw= row*cpw*CTb*(TW-TFC)
-      bshf = -Qiw/10000.
+      if (i .eq. 9 .and. j .eq. 43 .and. m .eq. 14) then
+        write(*,*) "QIW", Qiw, TW, TFC
+        TW= MAX(TFC,T(i,j,1)) 
+        TFC= TFr(S(i,j,1), ppp)
+        write(*,*) "QIWORIG", row*cpw*CTb*(TW-TFC)
+        write(*,*) "CTb", 6.0e-3*u_star 
+      end if
+      Qiw = row*cpw*CTb*(TW-TFC)
+      bshf = -Qiw/20000
       
       !-----------------------------------------------------------------------
       !     Update energy flux due to snow precipitation
@@ -883,7 +910,7 @@ c     Specific humidity at the surface Qs:
       
       if ( .not.thin_snow_active ) then
           tm    = tme(lice_top)
-          tt    = TA(i,j) - tzero
+          tt    = TA(i,j)
           efus  = cp_ice * ( tt - tm ) - mlfus + cp_wat * tm
           Fprec = snow_precip * rhosno * efus
       else ! FD no snow
@@ -896,12 +923,12 @@ c     Specific humidity at the surface Qs:
       tiold(0) = tseafrz
       
       if (lice_top==ns) then
- !!!         wmesh(ns) = - Aice(m,i,j)*Sublim - snow_precip
+          wmesh(ns) =  - snow_precip - sublimation_speed
           wmesh(ni) =0.d0
           wmesh(0 ) = bottom_speed
       else
- !!!         wmesh(ni) = - Aice(m,i,j)*Sublim ! sublimation or melt
-          wmesh(0 ) =        bottom_speed ! ice growth or melt
+          wmesh(ni) = - sublimation_speed
+          wmesh(0 ) = bottom_speed ! ice growth or melt
       endif
       
       fac=0.d0
@@ -918,6 +945,14 @@ c     Specific humidity at the surface Qs:
       wold=wmesh
     !  write(*,*) wmesh
       
+      
+      if (i .eq. 9 .and. j .eq. 43 .and. m .eq. 14) then
+          write(*,*) "theta_ther * dt * dzf", dzf
+          write(*,*) "bshf", bshf
+       write(*,*) "Fnet", Fnet ,"energy_snow_melt", energy_snow_melt
+      end if
+      
+      Fnet = Fnet !/10.
       do iteration = 1, maxiter ! convergence on temperature and wmesh
 
       rhs=0.d0
@@ -977,11 +1012,6 @@ c     Specific humidity at the surface Qs:
       !write(*,*) "Fnet", Fnet ,"energy_snow_melt", energy_snow_melt
       flux2= 0.d0
 
-      if (i .eq. 34 .and. j .eq. 43 .and. m .eq. 12) then
-          write(*,*) "theta_ther * dt * dzf", dzf
-          write(*,*) "bshf", bshf
-       write(*,*) "Fnet", Fnet ,"energy_snow_melt", energy_snow_melt
-      end if
       k=1
         tinew(k-1) = tseafrz ! keep basal temperature at sea temperature
         sum0 = em(k) * re(k) * dt
@@ -1012,21 +1042,20 @@ c     Specific humidity at the surface Qs:
       !  efus = cp_ice * ( tme(lice_top) - tiold(lice_top) ) + mlfus * ( 1.d0 - tme(lice_top)/tiold(lice_top) ) - cp_wat * tme(lice_top)
       ! precipitation energy transfer
       if (lice_top == ns ) then
-  !!!       flux2= flux2 + Fprec
+         flux2= flux2 + Fprec
       endif
       ! sublimation energy transfer
       if (.not.melt_ts) then
-  !!!       efus  = em(lice_top)
-  !!!       flux2 = flux2 + sublim * re(lice_top) * efus
+         efus  = em(lice_top)
+         flux2 = flux2 + sublimation_speed * re(lice_top) * efus
       endif
 
       ! final combination
-   !!!   rhs (lice_top) = rhs (lice_top) + dt * flux2
-    !  write(*,*) rhs(2), "rhs(2)"
+      rhs (lice_top) = rhs (lice_top) + dt * flux2
       
       !---------------------------------------------------------------------
       ! tri-diagonal solver call
-      if (i .eq. 20 .and. j .eq. 18 .and. m .eq. 1) then
+      if (i .eq. 9 .and. j .eq. 43 .and. m .eq. 14) then
         do k=1,lice_top
             !write(*,*) rhs(k), "rhs(", k, ")"
             !write(*,*) a(k), "a(", k, ") "
@@ -1075,45 +1104,49 @@ c     Specific humidity at the surface Qs:
           tinew(k) = tme(k)
       endif
       
-      
+      !---------------------------------------------------------------------
+        ! reset top melting to 'off' if velocity has the wrong sign
+        !---------------------------------------------------------------------
+
+        if ( melt_ts ) then
+            !write(*,*) "melt_ts", m,i,j
+          if ( lice_top==ns ) then
+             if ( wmesh(lice_top) < -snow_precip ) then
+!               melt_ts = .false.
+!               wmesh(lice_top)=-sublimation_speed-snow_precip
+!               write(*,*) "wmesh(lice_top) < -snow_precip", 
+!     &wmesh(lice_top), snow_precip,m,i,j
+             endif
+          else
+             if ( wmesh(lice_top) < 0.d0 ) then
+!               melt_ts = .false.
+!               wmesh(lice_top)=-sublimation_speed
+!               write(*,*) "wmesh(lice_top) < 0", wmesh(lice_top),m,i,j
+             endif
+          endif
+        endif
+        
+        
       do k=0,lice_top
-        if (i .eq. 34 .and. j .eq. 43 .and. m .eq. 12) then
-            write(*,*) tinew(k),"tiNEW", k,i,j,m 
+        if (i .eq. 9 .and. j .eq. 43 .and. m .eq. 14) then
+            !write(*,*) tinew(k),"tiNEW", k,i,j,m 
         end if
         if (tinew(k) .gt. 0.) then
-        write(*,*) tinew(k),"!!!!!!!!!!!!!!!!!!!", k,i,j,m 
+        !write(*,*) tinew(k),"!!!!!!!!!!!!!!!!!!!", k,i,j,m 
             please_stop = .true.
          end if
       enddo !1,lice_top
       do k=0,lice_top
-        if (i .eq. 34 .and. j .eq. 43 .and. m .eq. 12) then
-            write(*,*) tiold(k),"tiOLD", k,i,j,m 
+        if (i .eq. 9 .and. j .eq. 43 .and. m .eq. 14) then
+            !write(*,*) tiold(k),"tiOLD", k,i,j,m 
         end if
       enddo !1,lice_top
-      !---------------------------------------------------------------------
-      ! reset top melting to 'off' if velocity has the wrong sign
-      !---------------------------------------------------------------------
-
-      if ( melt_ts ) then
-         if ( lice_top==ns ) then
-           if ( wmesh(lice_top) < -snow_precip ) then
-             !!!!!melt_ts = .false.
-             !!!!!wmesh(lice_top)=-Sublim-snow_precip
-           endif
-         else
-           if ( wmesh(lice_top) < 0.d0 ) then
-             !!!!!!melt_ts = .false.
-             !!!!!!wmesh(lice_top)=-Sublim
-           endif
-         endif
-      endif
-      
       !---------------------------------------------------------------------
       ! need to get rid of snow if wmesh too large
       !---------------------------------------------------------------------
 
-      if (i .eq. 9 .and. j .eq. 47 .and. m .eq. 1) then
-            !write(*,*) "wmesh(ns)", wmesh(ns)*dt, hsold
+      if (i .eq. 9 .and. j .eq. 43 .and. m .eq. 14) then
+        !write(*,*) "melt_ts", melt_ts, thin_snow_active
         end if
         if ( wmesh(ns)*dt > hsold + 1d-18 ) then
           sume2 = 0.d0
@@ -1157,8 +1190,10 @@ c     Specific humidity at the surface Qs:
         dhi = ( wmesh(0 ) - wmesh(ni ) ) * dt
         dhs = ( 0.d0      - wmesh(ns ) ) * dt
 
-        if (i .eq. 34 .and. j .eq. 43 .and. m .eq. 12) then
-          write(*,*) "wmesh", wmesh(ns ), wmesh(ni ), wmesh(0 )
+        if (i .eq. 9 .and. j .eq. 43 .and. m .eq. 14) then
+          !write(*,*) "wmesh", wmesh(ns ), wmesh(ni ), wmesh(0 )
+          !write(*,*) "dhi", dhi
+          !write(*,*) "dhs", dhs
         end if
         if (-dhs > hsold) then
             !write(*,*) "-dhs > hsold", dhs, hsold
@@ -1172,11 +1207,10 @@ c     Specific humidity at the surface Qs:
             exit
         end if
         hsnew = max(hsold+dhs,0.d0)
-    !    write(*,*) hiold, "hiold", dhi, "dhi"
         hinew = hiold+dhi
-        if (i .eq. 14 .and. j .eq. 1 .and. m .eq. 13) then
-         ! write(*,*) wmesh(0), "wmesh(0)", dt, "dt"
-         ! write(*,*) i, "i", j, "j", hinew, "hinew", m, "m"
+        if (i .eq. 9 .and. j .eq. 43 .and. m .eq. 14) then
+            !write(*,*) "hinew", hinew 
+            !write(*,*) "hiold", hiold 
         end if
       ! FD debug
       !write(*,*) 'snow',hsnew,dhs,wmesh(ns)*dtice
@@ -1263,32 +1297,54 @@ c     Specific humidity at the surface Qs:
       ! dh_snowice is positive for the ice
 
       dh_sni = MAX( 0.d0 , ( rhosno * hs + (rhoice - rhowat ) * hi)
-     &  / ( rhosno + rhowat - rhoice ) )
+     &  / ( rhosno + rhowat - rhoice ) )/1000.
 
-      !if (dh_sni > 0.d0 ) then
-      ! hi  = hi + dh_sni
-      ! hs  = hs - dh_sni
-      !endif
+      if (dh_sni > 0.d0 ) then
+       hi  = hi + dh_sni
+       hs  = hs - dh_sni
+      endif
       
-      if (i .eq. 34 .and. j .eq. 43 .and. m .eq. 12) then
+      if (i .eq. 9 .and. j .eq. 43 .and. m .eq. 14) then
         write(*,*) "hi", hi, m, i, j
         write(*,*) "hs", hs, m, i, j
-      end if
-      dHice = hi*Aice(m,i,j) - Hice (m,i,j)
-      dHsnow = hs*Aice(m,i,j) - Hsnow(m,i,j)
+        write(*,*) "dh_sni", dh_sni
+      end if 
 
-      Hice (m,i,j) = hi*Aice(m,i,j)
-      Hsnow(m,i,j) = hs*Aice(m,i,j)
+      dHice = hi*Aice(m,i,j)*100 - Hice (m,i,j)
+      dHsnow = hs*Aice(m,i,j)*100 - Hsnow(m,i,j)
+
+      Hice (m,i,j) = hi*Aice(m,i,j)*100
+      Hsnow(m,i,j) = hs*Aice(m,i,j)*100
       
       dHiceT = dHiceT + dHice
-      if (i .eq. 34 .and. j .eq. 43 .and. m .eq. 12) then 
+      if (i .eq. 9 .and. j .eq. 43 .and. m .eq. 14) then 
         write(*,*) "dHice", dHice
         write(*,*) "dHsnow", dHsnow
       end if
       if (dHice .ne. dHice .or. dHice .gt. 1000 
      & .or. dHice .lt. -1000) then
         write(*,*) "mmmm", m, i, j
+!!!       	Hsnow(m,i,j)=0.
+!!!	do k=ni+1,ns
+!!!          TsnowFE(m,i,j,k-ni)=-10.  !!!!!!!!!!!!!!tme(k)
+!!!      enddo
+!!!	Hice(m,i,j) =0.
+!!!	Aice(m,i,j) =0.
+!!!	do k=1,ni
+!!!          TiceFE(m,i,j,k)= tme(k)
+!!!      enddo
+        stop
       end if
+      
+      do k=0,lice_top
+        if (i .eq. 9 .and. j .eq. 43 .and. m .eq. 14) then
+            write(*,*) tinew(k),"tiNEW", k,i,j,m 
+        end if
+      enddo !1,lice_top
+      
+        if (i .eq. 9 .and. j .eq. 43) then
+            write(*,*) "Aice", Aice(m,i,j), i,j,m 
+        end if
       dHsnowT = dHsnowT + dHsnow
       
       do k=1,ni
@@ -1302,19 +1358,58 @@ c     Specific humidity at the surface Qs:
 	
 	Tice(m,i,j) = TiceFE(m,i,j,1)
 	Tsnow(m,i,j) = TsnowFE(m,i,j,1)
-      !do k=1,ni
-      !    TiceFE(m,i,j,k)= 0.
-      !enddo
-      !do k=ni+1,ns
-      !    TsnowFE(m,i,j,k)=0.
-      !enddo   
+	
+	if(Aice(m,i,j).GT.Aimin) then
 
+cc	ppp= 0.5e-5*g*row*Hi                  
+      TFC= TFr(S(i,j,1), 0.) 
+      TW =T(i,j,1)
+      
+      IF( TW .GT. TFC) then
+ 
+***	Side= 3.14*1.6e-6*SQRT((TW-TFC)**3)*DT/(0.66*300.) !See NCAR manual
+***	Side= 4.*1.6e-6*SQRT((TW-TFC)**3)*DT/300.          !My estimate
+	Side= 1.44e-8*SQRT((TW-TFC)**3)*DT                 !Shmidt et.al., 2003
+      dAice=  -side*Aice (m,i,j)
+      dHice=  -side*Hice (m,i,j)
+      dHsnow= -side*Hsnow(m,i,j)
+      
+      if (i .eq. 9 .and. j .eq. 43 .and. m .eq. 14) then
+            write(*,*) "dAice",dAice,i,j,m 
+            write(*,*) "dHice",dHice,i,j,m 
+            write(*,*) "dHsnow",dHsnow,i,j,m 
+        end if
+
+      Hsnow(m,i,j)= Hsnow(m,i,j) +dHsnow
+      Hice (m,i,j)= Hice (m,i,j) +dHice
+      Aice (m,i,j)= Aice (m,i,j) +dAice
+
+      dHsnowT = dHsnowT +dHsnow
+      dHiceT  = dHiceT  +dHice
+
+      Q_melt= Qsnow*dHsnow +Qice*dHice
+      T(i,j,1)= T(i,j,1) +2.*Q_melt/(hz(1)*row*Cpw)
+      
+      end if  ! T > Tf
+
+      else  
+   
+      Hice (m,i,j) = 0.
+      Aice (m,i,j) = 0.
+	Tice (m,i,j) = 0.
+      Hsnow(m,i,j) = 0.
+      Tsnow(m,i,j) = 0.
+	do k=ni+1,ns
+          TsnowFE(m,i,j,k-ni)=-10.  !!!!!!!!!!!!!!tme(k)
+      enddo
+	do k=1,ni
+          TiceFE(m,i,j,k)= tme(k)
+      enddo
+      end if ! Ice Lateral Melting.
+      
       !end if !hi.gt.hminice
 	end if  ! ai(m) > 0
       enddo
-      if (i .eq. 16 .and. j .eq. 41) then
-        !write(*,*) "dHiceT", dHiceT
-      end if
       
 	do m=1,mgrad
 
@@ -1323,20 +1418,28 @@ c	write(*,*) 'Snow, lateral melting', Hsnow(m,i,j)
 c	end if
 
 
-      if(Hsnow(m,i,j).LT.Hsmin) then
+      if(Hsnow(m,i,j)/100 .LT.Hsmin) then
+      dHsnowT = dHsnowT +Hsnow(m,i,j)
 	Hsnow(m,i,j)=0.
 	do k=ni+1,ns
           TsnowFE(m,i,j,k-ni)=-10. !!!!!!!!!!!!tme(k)
       enddo
+      Tsnow(m,i,j) = 0.
 	end if
-      if(Hice(m,i,j).LT.Himin) then
+      if(Hice(m,i,j)/100. .LT.Himin) then
+      dHsnowT = dHsnowT +Hsnow(m,i,j)
+      dHiceT  = dHiceT  +Hice(m,i,j)
       !write(*,*) "Hice(m,i,j).LT.Himin", Hice(m,i,j), m, i, j
 	Hsnow(m,i,j)=0.
 	do k=ni+1,ns
           TsnowFE(m,i,j,k-ni)=-10.  !!!!!!!!!!!!!!tme(k)
       enddo
+      Qdelta= Qice*(-Hice(m,i,j)) -Qsnow*Hsnow(m,i,j)
+        T(i,j,1)= T(i,j,1) + 2.*Qdelta/(hz(1)*row*Cpw)
 	Hice(m,i,j) =0.
 	Aice(m,i,j) =0.
+		Tice (m,i,j) = 0.
+      Tsnow(m,i,j) = 0.
 	do k=1,ni
           TiceFE(m,i,j,k)= tme(k)
       enddo
@@ -1401,10 +1504,10 @@ c     see Los Alamos Ice Model, Bitz & Limpscomb 1999.
         !write(*,*) "aice(0,i,j)", aice(0,i,j)
       end if
 	IF(dHiceN .GT. 0.) then
-
-      if (dHiceN .GT. 10) then
-        dHiceN = 10
-      end if
+!
+!      if (dHiceN .GT. 10) then
+!        dHiceN = 10
+!      end if
 
 c     In a case of sufficient open water: frazil ice to the open water.
 	hhh0= dHiceN/MAX(aimin,aice(0,i,j))
@@ -1422,15 +1525,17 @@ c     New ice temperature - for T in situ only!
    !!!!   Q= (Tice(1,i,j)+TFC)*Hice(1,i,j)/2. +TFC*dHiceN*Aice(1,i,j)
       Q= (TiceFE(1,i,j,1)+TFC)*Hice(1,i,j)/2. +TFC*dHiceN*Aice(1,i,j)
       do k=1,ni
-        if (TiceFE(1,i,j,k) .eq. 0.) then
-       !     TiceFE(1,i,j,k)= (min(Q/Hice(1,i,j), -2.))
-            end if
+!        if (TiceFE(1,i,j,k) .eq. 0.) then
+!            TiceFE(1,i,j,k)= (min(Q/Hice(1,i,j), -2.))
+!            end if
+          TiceFE(1,i,j,k)=  tinew(k)
           if (i .eq. 26 .and. j .eq. 10 .and. m .eq. 1) then 
        ! write(*,*) "TiceFE(1,i,j,k)", TiceFE(1,i,j,k)
       end if
       enddo
+      Tice(1,i,j)=tinew(1)
   !!!    Tice(1,i,j)=Q/Hice(1,i,j)
-!   Tsnow(1,i,j)=-10.
+      Tsnow(1,i,j)=-10.
       do k=ni+1,ns
             TsnowFE(1,i,j,k)=-10.
       enddo
@@ -1445,19 +1550,21 @@ c     if no sufficient open water
 	end do
 
 c     New ice temperature - for T in situ only! Should be corrected
-  !    Q= (Tice(1,i,j)+TFC)*Hice(1,i,j)/2. +TFC*dHiceN*Aice(1,i,j)
-      Q= (TiceFE(1,i,j,k) +TFC)*Hice(1,i,j)/2. +TFC*dHiceN*Aice(1,i,j)
+    !!!!   Q= (Tice(1,i,j)+TFC)*Hice(1,i,j)/2. +TFC*dHiceN*Aice(1,i,j)
+      Q= (TiceFE(1,i,j,1)+TFC)*Hice(1,i,j)/2. +TFC*dHiceN*Aice(1,i,j)
       do k=1,ni
-      if (TiceFE(1,i,j,k) .eq. 0.) then
-          !  TiceFE(1,i,j,k)= (min(Q/Hice(1,i,j), -2.))
-            end if
+!        if (TiceFE(1,i,j,k) .eq. 0.) then
+!            TiceFE(1,i,j,k)= (min(Q/Hice(1,i,j), -2.))
+!            end if
+          TiceFE(1,i,j,k)=  tinew(k)
           if (i .eq. 26 .and. j .eq. 10 .and. m .eq. 1) then 
        ! write(*,*) "TiceFE(1,i,j,k)", TiceFE(1,i,j,k)
       end if
       enddo
-   !   Tice(1,i,j)=Q/Hice(1,i,j)
-   !   Tsnow(1,i,j)=-10.
-       do k=ni+1,ns
+      Tice(1,i,j)=tinew(1)
+  !!!    Tice(1,i,j)=Q/Hice(1,i,j)
+      Tsnow(1,i,j)=-10.
+      do k=ni+1,ns
             TsnowFE(1,i,j,k)=-10.
       enddo
 
@@ -1476,7 +1583,7 @@ c	if(m.eq.10.and.i.eq.17 .and. j.eq.24) then
 c	write(*,*) 'Snow, return', Hsnow(m,i,j)
 c	end if
       if (please_stop .and. .not. melted) then
-        stop
+        !stop
       end if
 
       return
