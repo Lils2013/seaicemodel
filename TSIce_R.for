@@ -659,6 +659,7 @@ c	end if
           isnow = 0.
       endif
             
+      ab = 1.0 - ( 1.0 - isnow ) * 0.30 - isnow * 0.15
       !---------------------------------------------------------------------
       ! latent heat calculation, sublimation processes and precipitation
       !---------------------------------------------------------------------
@@ -671,14 +672,13 @@ c     New ice temperature.
       sf= hsold/(hsold+0.02)
       
       Qrad= ab*( sf*(1.-0.85)+
-     &       (1.-sf)*(1.-albedoi) )*SW(i,j)/10000.
+     &       (1.-sf)*(1.-albedoi) )*SW(i,j)/5000.
      
-      ab = 1.0 - ( 1.0 - isnow ) * 0.30 - isnow * 0.15
       !-----------------------------------------------------
       ! Solar radiation transmitted below the surface layer
       !-----------------------------------------------------
       ftrice      =  (SW(i,j)) * ( 1.0 - ab)*( sf*(1.-0.85)+
-     &       (1.-sf)*(1.-albedoi) ) / 10000.
+     &       (1.-sf)*(1.-albedoi) ) / 5000.
       radtr_s(0) =  ftrice
       zzs = 0.0
       DO layer = 1, nlsno
@@ -687,7 +687,7 @@ c     New ice temperature.
         end if
          zzs = zzs + dzs(layer)
 !         radtr_s(layer) = radtr_s(0) * exp( - 5.8*( MAX( 0.0 ,
-         radtr_s(layer) = radtr_s(0) * exp( - 10.8*( MAX( 0.0 ,
+         radtr_s(layer) = radtr_s(0) * exp( - 20.8*( MAX( 0.0 ,
      &                    zzs ) ) )
          radab_s(layer) = radtr_s(layer-1) - radtr_s(layer)
       END DO
@@ -773,9 +773,9 @@ c     Latent Heat:
      &              ((273.16d0-7.66d0)/(tsu-7.66d0)**2.d0)
      
       ! derivative of the surface atmospheric net flux
-      dzf    =  4.d0*emi*stefa*((tsu)**3) +
+      dzf    =  (4.d0*emi*stefa*((tsu)**3) +
      &     + rho2*cp*CDH(tsu,TA(i,j))*(wind/100.)
-     &     +rho2*lv*CDL(tsu,TA(i,j))*(wind/100.)*zssdqw
+     &     +rho2*lv*CDL(tsu,TA(i,j))*(wind/100.)*zssdqw)/50.
      
       if (i .eq. 34 .and. j .eq. 43  .and. m .eq. 10) then
           !write(*,*) "tsu",  4.d0*emi*stefa*((tsu)**3), 
@@ -783,17 +783,10 @@ c     Latent Heat:
       !&       rho2*lv*CDL(tsu,TA(i,j))*(wind/100.)*zssdqw
         end if
       ! surface atmospheric net flux
-!      if (tsu-(TA(i,j)+tzero) .lt. -5.) then
-!        fsens=-rho2*cp*CDH(tsu,TA(i,j))*(wind/100.)*(-5)
-!      else if (tsu-(TA(i,j)+tzero) .gt. 5.) then
-!        fsens=-rho2*cp*CDH(tsu,TA(i,j))*(wind/100.)*(5)
-!        else
-!       fsens=-rho2*cp*CDH(tsu,TA(i,j))*(wind/100.)*(tsu-(TA(i,j)+tzero))
-!      end if
       fsens=-rho2*cp*CDH(tsu,TA(i,j))*(wind/100.)*(tsu-(TA(i,j)+tzero))
       flat= rho2*lv*CDL(tsu,TA(i,j))*(wind/100.)*(q0-Q2m(i,j))
       flat   =  MIN( -flat , 0.d0 )
-      Fnet=Qrad + (netlw + fsens + flat)/10
+      Fnet=Qrad + (netlw + fsens + flat)/50.
       if (i .eq. 34 .and. j .eq. 43  .and. m .eq. 10) then
         write(*,*) "Ta(i,j)", Ta(i,j)
         write(*,*) "tiold(lice_top)", tiold(lice_top)
@@ -907,7 +900,7 @@ c     Latent Heat:
 !        write(*,*) "QIWORIG", row*cpw*CTb*(TW-TFC)
 !        write(*,*) "CTb", 6.0e-3*u_star 
       end if
-      bshf = -Qiw/2000
+      bshf = -Qiw/1000
       
       !-----------------------------------------------------------------------
       !     Update energy flux due to snow precipitation
@@ -966,7 +959,6 @@ c     Latent Heat:
       cm=0.d0
       
       do k=1,lice_top
-       !   tt = 0.25d0*(tiold(k-1)+tinew(k-1)+tiold(k)+tinew(k))
           tt1 = 0.5d0*(tiold(k-1)+tiold(k))
           tt2 = 0.5d0*(tinew(k-1)+tinew(k))
 
