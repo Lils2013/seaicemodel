@@ -390,24 +390,24 @@ cccc      read (30,rec=1) ice_mask_p
         do i=1,il
           do mg=1,mgrad
             do k = 1,nlice
-              TiceFE(mg,i,j,k) = Tice(mg,i,j)
-              if (Tice(mg,i,j)<-50) then
-                !write(*,*) Tice(mg,i,j), "tice"
-                TiceFE(mg,i,j,k)=-3
-              endif
-              if (Tice(mg,i,j)>-0.000001) then
-                 TiceFE(mg,i,j,k) = -3
-                 endif
+              TiceFE(mg,i,j,k) = -10 !Tice(mg,i,j)
+!              if (Tice(mg,i,j)<-50) then
+!                !write(*,*) Tice(mg,i,j), "tice"
+!                TiceFE(mg,i,j,k)=-3
+!              endif
+!              if (Tice(mg,i,j)>-0.000001) then
+!                 TiceFE(mg,i,j,k) = -3
+!                 endif
             enddo
             do k = 1,nlsno
-                if (Tsnow(mg,i,j)<-50) then
-               ! write(*,*) Tsnow(mg,i,j), "tsn"
-                    TsnowFE(mg,i,j,k)=-15
-                else if (Tsnow(mg,i,j)>-0.000001) then
-                    TsnowFE(mg,i,j,k) = -10
-                else
+!                if (Tsnow(mg,i,j)<-50) then
+!               ! write(*,*) Tsnow(mg,i,j), "tsn"
+!                    TsnowFE(mg,i,j,k)=-15
+!                else if (Tsnow(mg,i,j)>-0.000001) then
+!                    TsnowFE(mg,i,j,k) = -10
+!                else
                     TsnowFE(mg,i,j,k) =  -10 !!!!!!!!!!!!Tsnow(mg,i,j)
-                endif
+!                endif
             enddo
             if (i .eq. 24 .and. j .eq. 12 .and. mg .eq. 8) then
                 write(*,*) "TsnowInit", Tsnow(mg,i,j), mg,i,j
