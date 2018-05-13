@@ -439,7 +439,7 @@ c     Flooding and aging with correspondent freshwater flux to ocean.
      &        rhoice    = 917.0_8,
      &        ai2       = 21.8746,
      &        bi        =-265.5,
-     &        rad_kappa_i = 0.8
+     &        rad_kappa_i = 0.6
        real(8) ftot2, sume2, flux2, pi, energy_snow_melt, 
      &       sublimation_speed, bottom_speed, rom
       real(8) dzi(maxlay), dzi_sw(maxlay)
@@ -459,7 +459,7 @@ c     Flooding and aging with correspondent freshwater flux to ocean.
       real(8) tsu, tbo, ttt, ssss, aavg
       real(8) netlw, dwnlw, pres
       real(8) fac_transmi, swrad
-      logical fixed_tb,melt_ts,melt_tb,panic
+      logical fixed_tb,melt_ts,melt_tb,panic, new_ice
       real(8) Fprec, ssnow ! heat flux due to precipitation [W/m2]
       real(8) tair, qair, uair
       logical :: energy_check=.false., debug=.false.
@@ -593,7 +593,7 @@ c	end if
       kice(1:ni)   =cond_ice
       kice(ni+1:ns)=cond_sno
       
-      seasal = 30 !S(i,j,1)
+      seasal = 34 !S(i,j,1)
       tseafrz=-0.054*seasal
       
       tiold(0) = tseafrz
@@ -604,7 +604,7 @@ c	end if
       re(ni+1:ns)=rhosno
       
       do k=1,ni
-          sali(k) = 30 !S(i,j,1)
+          sali(k) = 4 !S(i,j,1)
       enddo
       DO k=ni+1,ns
           sali(k) = 0.d0
@@ -687,7 +687,7 @@ c     New ice temperature.
         end if
          zzs = zzs + dzs(layer)
 !         radtr_s(layer) = radtr_s(0) * exp( - 5.8*( MAX( 0.0 ,
-         radtr_s(layer) = radtr_s(0) * exp( - 20.8*( MAX( 0.0 ,
+         radtr_s(layer) = radtr_s(0) * exp( - 8.8*( MAX( 0.0 ,
      &                    zzs ) ) )
          radab_s(layer) = radtr_s(layer-1) - radtr_s(layer)
       END DO
@@ -723,14 +723,14 @@ c     New ice temperature.
       sumrad=0.d0
       DO k=lice_top,ni+1,-1
          Rad(k) = radab_s(ns-k+1) !k/20. !swradab_s(ns-k+1)
-        if (i .eq. 34 .and. j .eq. 43  .and. m .eq. 10
+        if (i .eq. 27 .and. j .eq. 31  .and. m .eq. 1
      &  .and. Rad(k) .ne. 0.) then
         write(*,*) "Rad(k) snow", Rad(k), k
       end if
       ENDDO
       DO k=ni,1,-1
          Rad(k) = radab_phy_i(ni-k+1) !k/20. !swradab_i(ni-k+1)
-         if (i .eq. 34 .and. j .eq. 43  .and. m .eq. 10
+         if (i .eq. 27 .and. j .eq. 31  .and. m .eq. 1
      &  .and. Rad(k) .ne. 0.) then
         write(*,*) "Rad(k) ice", Rad(k), k
       end if
@@ -775,9 +775,9 @@ c     Latent Heat:
       ! derivative of the surface atmospheric net flux
       dzf    =  (4.d0*emi*stefa*((tsu)**3) +
      &     + rho2*cp*CDH(tsu,TA(i,j))*(wind/100.)
-     &     +rho2*lv*CDL(tsu,TA(i,j))*(wind/100.)*zssdqw)/50.
+     &     +rho2*lv*CDL(tsu,TA(i,j))*(wind/100.)*zssdqw)/10.
      
-      if (i .eq. 34 .and. j .eq. 43  .and. m .eq. 10) then
+      if (i .eq. 27 .and. j .eq. 31  .and. m .eq. 1) then
           !write(*,*) "tsu",  4.d0*emi*stefa*((tsu)**3), 
       !&     rho2,cp,CDH(tsu,TA(i,j)),(wind/100.),
       !&       rho2*lv*CDL(tsu,TA(i,j))*(wind/100.)*zssdqw
@@ -786,8 +786,8 @@ c     Latent Heat:
       fsens=-rho2*cp*CDH(tsu,TA(i,j))*(wind/100.)*(tsu-(TA(i,j)+tzero))
       flat= rho2*lv*CDL(tsu,TA(i,j))*(wind/100.)*(q0-Q2m(i,j))
       flat   =  MIN( -flat , 0.d0 )
-      Fnet=Qrad + (netlw + fsens + flat)/50.
-      if (i .eq. 34 .and. j .eq. 43  .and. m .eq. 10) then
+      Fnet=Qrad + (netlw + fsens + flat)/10.
+      if (i .eq. 27 .and. j .eq. 31  .and. m .eq. 1) then
         write(*,*) "Ta(i,j)", Ta(i,j)
         write(*,*) "tiold(lice_top)", tiold(lice_top)
         write(*,*) "SW", SW(i,j) * ab, SW(i,j), ab
@@ -799,22 +799,18 @@ c     Latent Heat:
         write(*,*) "hiold, hsold", hiold, hsold
         write(*,*) "TSNOW", Tsnow(m,i,j)
       end if
-      !fac_transmi * swrad + netlw + fsens + flat
-      !roa*Cpa*CDH(tsu,TA(i,j))*wind*(TA(i,j)-tsu)+RLW + Qrad +LH
-      
-      !write(*,*) "fsens", fsens, TA(i,j)
       
       !---------------------------------------------------------------------
       ! accumulation at the surface
       !---------------------------------------------------------------------
       if (TA(i,j) < 0.0 ) then
-        snow_precip = row*Pr(i,j)*Aice(m,i,j)/(rosdry*10.)
+        snow_precip = row*Pr(i,j)*Aice(m,i,j)/(rosdry*100.)
         rain_precip = 0.d0
       else
         snow_precip = 0.d0
-        rain_precip = Pr(i,j)*Aice(m,i,j)/10.
+        rain_precip = Pr(i,j)*Aice(m,i,j)/100.
       endif
-      if (i .eq. 34 .and. j .eq. 43  .and. m .eq. 10) then
+      if (i .eq. 27 .and. j .eq. 31  .and. m .eq. 1) then
         write(*,*) "precip",snow_precip,rain_precip,Pr(i,j),Aice(m,i,j)
       end if
 
@@ -826,7 +822,7 @@ c     Latent Heat:
       !---------------------------------------------------------------------
        if ( hsold <= hslim ) then
        
-       if (i .eq. 34 .and. j .eq. 43  .and. m .eq. 10) then
+       if (i .eq. 27 .and. j .eq. 31  .and. m .eq. 1) then
         write(*,*) "hsold <= hslim", hsold, hslim 
       end if
       ! then 1- compute total energy in snow
@@ -893,7 +889,7 @@ c     Latent Heat:
         !TFC = Tfreeze1(ssss)
         TW= MAX(TFC,T(i,j,1)) 
       Qiw= row*cpw*CTb*(TW-TFC)
-      if (i .eq. 34 .and. j .eq. 43  .and. m .eq. 10) then
+      if (i .eq. 27 .and. j .eq. 31  .and. m .eq. 1) then
         write(*,*) "QIW", Qiw, TW, TFC, CTb
 !        TW= MAX(TFC,T(i,j,1)) 
 !        TFC= TFr(S(i,j,1), ppp)
@@ -944,7 +940,7 @@ c     Latent Heat:
     !  write(*,*) wmesh
       
       
-      if (i .eq. 34 .and. j .eq. 43  .and. m .eq. 10) then
+      if (i .eq. 27 .and. j .eq. 31  .and. m .eq. 1) then
           write(*,*) "theta_ther * dt * dzf", dzf
           write(*,*) "bshf", bshf
        write(*,*) "Fnet", Fnet ,"energy_snow_melt", energy_snow_melt
@@ -1049,7 +1045,7 @@ c     Latent Heat:
       
       !---------------------------------------------------------------------
       ! tri-diagonal solver call
-      if (i .eq. 34 .and. j .eq. 43  .and. m .eq. 10) then
+      if (i .eq. 27 .and. j .eq. 31  .and. m .eq. 1) then
         do k=1,lice_top
             !write(*,*) rhs(k), "rhs(", k, ")"
             !write(*,*) a(k), "a(", k, ") "
@@ -1122,7 +1118,7 @@ c     Latent Heat:
         
         
       do k=0,lice_top
-        if (i .eq. 34 .and. j .eq. 43  .and. m .eq. 10) then
+        if (i .eq. 27 .and. j .eq. 31  .and. m .eq. 1) then
             !write(*,*) tinew(k),"tiNEW", k,i,j,m 
         end if
         if (tinew(k) .gt. 0.) then
@@ -1131,7 +1127,7 @@ c     Latent Heat:
          end if
       enddo !1,lice_top
       do k=0,lice_top
-        if (i .eq. 34 .and. j .eq. 43  .and. m .eq. 10) then
+        if (i .eq. 27 .and. j .eq. 31  .and. m .eq. 1) then
             !write(*,*) tiold(k),"tiOLD", k,i,j,m 
         end if
       enddo !1,lice_top
@@ -1139,7 +1135,7 @@ c     Latent Heat:
       ! need to get rid of snow if wmesh too large
       !---------------------------------------------------------------------
 
-      if (i .eq. 34 .and. j .eq. 43  .and. m .eq. 10) then
+      if (i .eq. 27 .and. j .eq. 31  .and. m .eq. 1) then
         !write(*,*) "melt_ts", melt_ts, thin_snow_active
         end if
         if ( wmesh(ns)*dt > hsold + 1d-18 ) then
@@ -1184,7 +1180,7 @@ c     Latent Heat:
         dhi = ( wmesh(0 ) - wmesh(ni ) ) * dt
         dhs = ( 0.d0      - wmesh(ns ) ) * dt
 
-        if (i .eq. 34 .and. j .eq. 43  .and. m .eq. 10) then
+        if (i .eq. 27 .and. j .eq. 31  .and. m .eq. 1) then
           !write(*,*) "wmesh", wmesh(ns ), wmesh(ni ), wmesh(0 )
           !write(*,*) "dhi", dhi
           !write(*,*) "dhs", dhs
@@ -1202,7 +1198,7 @@ c     Latent Heat:
         end if
         hsnew = max(hsold+dhs,0.d0)
         hinew = hiold+dhi
-        if (i .eq. 34 .and. j .eq. 43  .and. m .eq. 10) then
+        if (i .eq. 27 .and. j .eq. 31  .and. m .eq. 1) then
             !write(*,*) "hinew", hinew 
             !write(*,*) "hiold", hiold 
         end if
@@ -1291,14 +1287,14 @@ c     Latent Heat:
       ! dh_snowice is positive for the ice
 
       dh_sni = MAX( 0.d0 , ( rhosno * hs + (rhoice - rhowat ) * hi)
-     &  / ( rhosno + rhowat - rhoice ) )/100.
+     &  / ( rhosno + rhowat - rhoice ) )
 
       if (dh_sni > 0.d0 ) then
        hi  = hi + dh_sni
        hs  = hs - dh_sni
       endif
       
-      if (i .eq. 34 .and. j .eq. 43  .and. m .eq. 10) then
+      if (i .eq. 27 .and. j .eq. 31  .and. m .eq. 1) then
         write(*,*) "hi", hi, m, i, j
         write(*,*) "hs", hs, m, i, j
         write(*,*) "dh_sni", dh_sni
@@ -1311,7 +1307,7 @@ c     Latent Heat:
       Hsnow(m,i,j) = hs*Aice(m,i,j)*100
       
       dHiceT = dHiceT + dHice
-      if (i .eq. 34 .and. j .eq. 43  .and. m .eq. 10) then 
+      if (i .eq. 27 .and. j .eq. 31  .and. m .eq. 1) then 
         write(*,*) "dHice", dHice
         write(*,*) "dHsnow", dHsnow
       end if
@@ -1327,16 +1323,16 @@ c     Latent Heat:
 !!!	do k=1,ni
 !!!          TiceFE(m,i,j,k)= tme(k)
 !!!      enddo
-        stop
+!        stop
       end if
       
       do k=0,lice_top
-        if (i .eq. 34 .and. j .eq. 43  .and. m .eq. 10) then
+        if (i .eq. 27 .and. j .eq. 31  .and. m .eq. 1) then
             write(*,*) tinew(k),"tiNEW", k,i,j,m 
         end if
       enddo !1,lice_top
       
-        if (i .eq. 34 .and. j .eq. 43) then
+        if (i .eq. 27 .and. j .eq. 31) then
             write(*,*) "Aice", Aice(m,i,j), i,j,m 
         end if
       dHsnowT = dHsnowT + dHsnow
@@ -1368,18 +1364,18 @@ cc	ppp= 0.5e-5*g*row*Hi
       dHice=  -side*Hice (m,i,j)
       dHsnow= -side*Hsnow(m,i,j)
       
-      if (i .eq. 34 .and. j .eq. 43  .and. m .eq. 10) then
+      if (i .eq. 27 .and. j .eq. 31  .and. m .eq. 1) then
 !            write(*,*) "dAice",dAice,i,j,m 
 !            write(*,*) "dHice",dHice,i,j,m 
 !            write(*,*) "dHsnow",dHsnow,i,j,m 
         end if
 
-!      Hsnow(m,i,j)= Hsnow(m,i,j) +dHsnow
-!      Hice (m,i,j)= Hice (m,i,j) +dHice
-!      Aice (m,i,j)= Aice (m,i,j) +dAice
-!
-!      dHsnowT = dHsnowT +dHsnow
-!      dHiceT  = dHiceT  +dHice
+      Hsnow(m,i,j)= Hsnow(m,i,j) +dHsnow
+      Hice (m,i,j)= Hice (m,i,j) +dHice
+      Aice (m,i,j)= Aice (m,i,j) +dAice
+
+      dHsnowT = dHsnowT +dHsnow
+      dHiceT  = dHiceT  +dHice
 
 !      Q_melt= Qsnow*dHsnow +Qice*dHice
 !      T(i,j,1)= T(i,j,1) +2.*Q_melt/(hz(1)*row*Cpw)
@@ -1435,7 +1431,7 @@ c	end if
 		Tice (m,i,j) = 0.
       Tsnow(m,i,j) = 0.
 	do k=1,ni
-          TiceFE(m,i,j,k)= tme(k)
+          TiceFE(m,i,j,k)=-10. ! tme(k)
       enddo
 	end if
 
@@ -1495,15 +1491,9 @@ c     see Los Alamos Ice Model, Bitz & Limpscomb 1999.
       end if  ! T<TFC
       end do  ! k=1,kb loop
 
-      if (aice(0,i,j) .gt. 0.9) then
-        !write(*,*) "aice(0,i,j)", aice(0,i,j)
-      end if
 	IF(dHiceN .GT. 0.) then
-!
-!      if (dHiceN .GT. 10) then
-!        dHiceN = 10
-!      end if
 
+      new_ice = .false.
 c     In a case of sufficient open water: frazil ice to the open water.
 	hhh0= dHiceN/MAX(aimin,aice(0,i,j))
 
@@ -1512,6 +1502,9 @@ c     Thickness of the new ice
       IF( hhh0 .LE. Hmax(2)) then
 	delta=dHiceN/Href
 
+      if (aice(1,i,j) < 0.000001) then
+        new_ice = .true.
+      end if
       Hice(1,i,j)=Hice(1,i,j)+dHiceN
       aice(1,i,j)= aice(1,i,j)+ MIN(delta, aice(0,i,j))
       aice(0,i,j)= MAX(0.,aice(0,i,j)- delta)
@@ -1523,9 +1516,11 @@ c     New ice temperature - for T in situ only!
 !        if (TiceFE(1,i,j,k) .eq. 0.) then
 !            TiceFE(1,i,j,k)= (min(Q/Hice(1,i,j), -2.))
 !            end if
-          TiceFE(1,i,j,k)=  tinew(k)
+          if (new_ice) then
+            TiceFE(1,i,j,k) = -10
+            end if
+!          TiceFE(1,i,j,k)=  tinew(k)
       enddo
-      Tice(1,i,j)=tinew(1)
   !!!    Tice(1,i,j)=Q/Hice(1,i,j)
       Tsnow(1,i,j)=-10.
       do k=ni+1,ns
@@ -1533,6 +1528,9 @@ c     New ice temperature - for T in situ only!
       enddo
       else
 
+      if (aice(1,i,j) < 0.000001) then
+        new_ice = .true.
+      end if
 c     New Ice mass spreaded unifirmly over entire cell
 c     if no sufficient open water
       Hice(1,i,j)=Hice(1,i,j)+dHiceN*(Aice(0,i,j)+Aice(1,i,j))
@@ -1548,6 +1546,9 @@ c     New ice temperature - for T in situ only! Should be corrected
 !        if (TiceFE(1,i,j,k) .eq. 0.) then
 !            TiceFE(1,i,j,k)= (min(Q/Hice(1,i,j), -2.))
 !            end if
+        if (new_ice) then
+            TiceFE(1,i,j,k) = -10
+            end if
           TiceFE(1,i,j,k)=  tinew(k)
           if (i .eq. 26 .and. j .eq. 10 .and. m .eq. 1) then 
        ! write(*,*) "TiceFE(1,i,j,k)", TiceFE(1,i,j,k)
@@ -1578,7 +1579,7 @@ c	end if
         !stop
       end if
 
-      if (i .eq. 34 .and. j .eq. 43) then
+      if (i .eq. 27 .and. j .eq. 31) then
       aavg=0.
             do m=1,mgrad
             aavg = Aice(m,i,j) + aavg

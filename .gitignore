@@ -1,5 +1,5 @@
 *.dat
-*.exe
 *.txt
-*.obj
 *.grd
+*.obj
+*.exe
