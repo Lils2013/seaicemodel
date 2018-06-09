@@ -331,8 +331,20 @@ c     Ice Data
      *      form='unformatted',recl=nna)
 c      open (unit=30,file=imask,status='old',access='direct',
 c     *      form='unformatted',recl=nn)
-      open (unit=205,file="area.txt",action="write",
-     * status="old")
+      open (unit=205,file="area1.txt",action="write",
+     * status="old", DECIMAL='COMMA')
+     
+      open (unit=206,file="hi_pole1.txt",action="write",
+     * status="old", DECIMAL='COMMA')
+     
+      open (unit=207,file="hs_pole1.txt",action="write",
+     * status="old", DECIMAL='COMMA')
+          
+      open (unit=208,file="hi_sheba.txt",action="write",
+     * status="old", DECIMAL='COMMA')
+     
+      open (unit=209,file="hs_sheba.txt",action="write",
+     * status="old", DECIMAL='COMMA')
 	 
 
 c     Neptune components      
@@ -390,7 +402,7 @@ cccc      read (30,rec=1) ice_mask_p
         do i=1,il
           do mg=1,mgrad
             do k = 1,nlice
-              TiceFE(mg,i,j,k) = -10 !Tice(mg,i,j)
+              TiceFE(mg,i,j,k) = -5 !-10 !Tice(mg,i,j)
 !              if (Tice(mg,i,j)<-50) then
 !                !write(*,*) Tice(mg,i,j), "tice"
 !                TiceFE(mg,i,j,k)=-3
@@ -845,8 +857,6 @@ ccc	ntide= ntide +1
       nst=nst +1
       
       write(*,*) "----------------------", nst
-      !write(*,*) "u", u
-      write(*,*) "----------------------"  
 
       
       call Forcing3(iyear,idglobal,L,dthr,TA,Q2m,WX,WY,Pa,il,jl,
@@ -1028,7 +1038,7 @@ c     Ice categories redistribution
 
 c     Ridging and Ice Strength
       
-!!!      Call Redis
+    !  Call Redis
 
 
 
@@ -1152,11 +1162,33 @@ c      call maxu
 c     =========== Vertical T,S diffusion and Ice Thermodynamics
       !write(*,*) "PME", PME
       
+      	do j=1,jl
+	do i=1,il
+	if (i .eq. 14 .and. j .eq. 11) then
+      aavg=0.
+            do m=1,mgrad
+            aavg = Aice(m,i,j) + aavg
+            end do
+            write(*,*) "aavg1",aavg,i,j,m 
+        end if
+	end do
+	end do
       call tsice
 c     Ice categories redistribution
 
       Call Rebin
 
+      do j=1,jl
+	do i=1,il
+	if (i .eq. 14 .and. j .eq. 11) then
+      aavg=0.
+            do m=1,mgrad
+            aavg = Aice(m,i,j) + aavg
+            end do
+            write(*,*) "aavg2",aavg,i,j,m 
+        end if
+	end do
+	end do
       
 
       
@@ -1719,9 +1751,12 @@ c     ================================================
       Himean=0.
 	HiPole=0.
 	HsPole=0.
+	HiSheba=0.
+	HsSheba=0.
       Hsmean=0.
       Amean= 0.
 	APole=0.
+	ASheba=0.
 
 	do j=1,jl
       do i=1,il
@@ -1739,6 +1774,11 @@ c     ================================================
 		HiPole= HiPole +Hice(m,i,j)
 		HsPole= HsPole +Hsnow(m,i,j)
 		APole=  APole  +Aice(m,i,j)
+		end if
+		if(i .eq. 14 .and. j .eq. 11) then
+		HiSheba= HiSheba +Hice(m,i,j)
+		HsSheba= HsSheba +Hsnow(m,i,j)
+		ASheba=  ASheba  +Aice(m,i,j)
 		end if
       Himean= Himean +coef*Hice(m,i,j)
       Hsmean= Hsmean +coef*Hsnow(m,i,j)
@@ -1786,6 +1826,14 @@ cc      write(*,'(8f10.1)') (Aice(MM,i0imax,j0imax), MM=1,mgrad)
       HiPole= HiPole/APole
       HsPole= HsPole/APole
       write(*,*)'Hice, Hsnow at North Pole', hipole, hspole
+      write(206,*) hipole
+      write(207,*) hspole
+      end if
+      if(APole .GT. 0.10) then
+      HiSheba= HiSheba/ASheba
+      HsSheba= HsSheba/ASheba
+      write(208,*) HiSheba
+      write(209,*) HsSheba
       end if
 
       return

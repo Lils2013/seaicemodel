@@ -63,6 +63,10 @@ c     To next thicker category.
       do mg=1,(mgrad-1)
       if(hice(mg,i,j).GT.hmax(mg)*aice(mg,i,j)) then
       
+      if (i .eq. 14 .and. j .eq. 11) then
+        write(*,*) "hice(mg+,i,j)",hice(mg,i,j),mg,i,j,k
+        write(*,*) "aice(mg+,i,j)", aice(mg,i,j)
+      end if
       aice(mg+1,i,j)=aice(mg+1,i,j)+aice(mg,i,j)
       aice(mg,i,j)= 0.
       hice(mg+1,i,j)=hice(mg+1,i,j)+hice(mg,i,j)
@@ -75,14 +79,14 @@ c     To next thicker category.
       qs(mg)= 0.
       do k=1,ni
           TiceFE(mg+1,i,j,k)=TiceFE(mg,i,j,k)
-          if (i .eq. 20 .and. j .eq. 22) then
-!        write(*,*) "TiceFE(mg+1,i,j,k)",TiceFE(mg+1,i,j,k),mg+1,i,j,k
+          if (i .eq. 14 .and. j .eq. 11) then
+        write(*,*) "TiceFE(mg+1,i,j,k)",TiceFE(mg+1,i,j,k),mg+1,i,j,k
       end if
       enddo
       do k=ni+1,ns
           TsnowFE(mg+1,i,j,k-ni)=TsnowFE(mg,i,j,k-ni)
-          if (i .eq. 20 .and. j .eq. 22) then
-!        write(*,*) "TsnowFE()",TsnowFE(mg+1,i,j,k-ni),mg+1,i,j,k
+          if (i .eq. 14 .and. j .eq. 11) then
+       write(*,*) "TsnowFE()",TsnowFE(mg+1,i,j,k-ni),mg+1,i,j,k
       end if
       enddo
       end if
@@ -91,6 +95,10 @@ c     To next thicker category.
 c     To next thinner category.
       do mg=mgrad,2,-1
       if( hice(mg,i,j) .LT. hmax(mg-1)*aice(mg,i,j)) then
+      
+      if (i .eq. 14 .and. j .eq. 11) then
+        write(*,*) "hice(mg-,i,j)",hice(mg,i,j),mg,i,j,k
+      end if
       aice(mg-1,i,j)=aice(mg-1,i,j)+aice(mg,i,j)
       aice(mg,i,j)= 0.
       hice(mg-1,i,j)=hice(mg-1,i,j)+hice(mg,i,j)
@@ -103,14 +111,14 @@ c     To next thinner category.
       qs(mg)= 0.
       do k=1,ni
           TiceFE(mg-1,i,j,k)=TiceFE(mg,i,j,k)
-          if (i .eq. 20 .and. j .eq. 22) then
-!        write(*,*) "TiceFE(mg-1,i,j,k)",TiceFE(mg-1,i,j,k),mg-1,i,j,k
+          if (i .eq. 14 .and. j .eq. 11) then
+        write(*,*) "TiceFE(mg-1,i,j,k)",TiceFE(mg-1,i,j,k),mg-1,i,j,k
       end if
       enddo
       do k=ni+1,ns
           TsnowFE(mg-1,i,j,k-ni)=TsnowFE(mg,i,j,k-ni)
-          if (i .eq. 20 .and. j .eq. 22) then
-!        write(*,*) "TsnowFE()",TsnowFE(mg-1,i,j,k-ni),mg-1,i,j,k
+          if (i .eq. 14 .and. j .eq. 11) then
+        write(*,*) "TsnowFE()",TsnowFE(mg-1,i,j,k-ni),mg-1,i,j,k
       end if
       enddo
       end if

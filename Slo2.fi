@@ -7,7 +7,7 @@
 
       parameter(il=35,jl=49,kl=40,klp=kl+1,ilp=il+2,jlp=jl+2)
       parameter(il1=il+1,jl1=jl+1)
-      integer, parameter :: maxlay = 230, nlsno=5, nlice=5
+      integer, parameter :: maxlay = 230, nlsno=5, nlice=10
       parameter (mgrad=14)
 
       common /c1/ u(0:il1,0:jl1,kl),v(0:il1,0:jl1,kl),w(0:il1,0:jl1,kl)
