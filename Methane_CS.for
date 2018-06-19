@@ -41,6 +41,7 @@
       REAL*8   B(LEN),SL(LEN),R0(LEN)
       REAL*8   SK(LEN),CK(KRP1,KRP1),GIV(2,KRP1),W0(LEN)
       REAL*8   Z0(LEN,KRP1),V0(LEN)
+      REAL     t1,t2
 
 c     Monthly means.
       dimension umonth(0:il1,0:jl1,kl), vmonth(0:il1,0:jl1,kl), 
@@ -345,7 +346,12 @@ c     *      form='unformatted',recl=nn)
      
       open (unit=209,file="hs_sheba.txt",action="write",
      * status="old", DECIMAL='COMMA')
-	 
+	      
+      open (unit=210,file="iter.txt",action="write",
+     * DECIMAL='COMMA')
+	      
+      open (unit=211,file="time.txt",action="write",
+     * DECIMAL='COMMA')
 
 c     Neptune components      
       open (unit=33,file=neptunedat,status='old',access='direct',
@@ -627,6 +633,7 @@ c     ==============================================
 c                    TIME LOOP
 c     ==============================================
 
+      call CPU_TIME(t1)
       DO iYEAR= iybeg, iybeg+nyear-1
 
 	idglobal = 0
@@ -1334,11 +1341,11 @@ c	end do
       albedoi=F_ai(Tice(mgg,12,11),Hice(mgg,12,11)/aice(mgg,12,11))
       Hs= Hsnow(mgg,12,11)/aice(mgg,12,11)
 	sf= hs/(hs+2.)
-      endif
       medalb=medalb+(sf*asnow+
      &       (1.-sf)*albedoi)*aice(mgg,12,11)
       write(*,*) medalb, aice(mgg,12,11), aice(mgg,13,11) , sf
       write(*,*) s(12,13,1), asnow, albedoi
+      endif
       enddo
       medalb=medalb/(1-aice(0,12,11))
        write(201,*) medalb, 'Year',iYear,' month',imonth,' day', iday
@@ -1379,6 +1386,8 @@ c	end do
 	write(*,*) 'Qiw', Qiw, TFC, T(i,j,1), u_star, A50cm
       
 	write(*,*) 'Year',iYear,' month',imonth,' day', iday
+	call CPU_TIME(t2)
+	write(*,*) 'Time elapsed: ', t2-t1
       write(*,*)'-----------------------------------'
       end if
 
@@ -1509,6 +1518,7 @@ c      end do
       call energ(iYear,iMonth,umonth,vmonth)
 
 	END DO  ! months
+	write(211,*) 'Time elapsed: ', t2-t1
 	END DO  ! years
 c     ================================================
 

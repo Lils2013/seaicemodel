@@ -159,9 +159,11 @@ c     If snow is thin - one can see ice
       endif
       
       ab=1.0 - ( 1.0 - isnow ) * 0.30 - isnow * 0.15
+      
+!      ab = 1.0
 *     SW Dumping scale is 1.5m 
       Qrad= Qrad+ 
-     & +ab*Aice(mg,i,j)*( sf*(1.-0.85)+
+     & +( 1.0 - ab)*Aice(mg,i,j)*( sf*(1.-0.85)+
      &       (1.-sf)*(1.-albedoi) )*SW(i,j)*EXP(-Hi*0.8/100.
      &  -Hs*5.8/100.)
 
@@ -485,6 +487,14 @@ c     Accuracy - 1000 erg/cm2 = 1.0 W/m2
 c     Atmosphere vapor pressure epsa:
       epsa=Q2m(i,j)*Pa(i,j)/0.622
 
+      if (i .eq. 14 .and. j .eq. 11) then
+      aavg=0.
+            do m=1,mgrad
+            aavg = Aice(m,i,j) + aavg
+!            write(*,*) "Aice_pre", Aice(m,i,j), i,j,m 
+            end do
+!            write(*,*) "aavg_pre",aavg,i,j,m 
+        end if
 c     1. Old snow and ice.
       do m=1,mgrad
       
@@ -628,9 +638,11 @@ c	end if
             
 !      ab = aI0
       
-      ab=1.0 - ( 1.0 - isnow ) * 0.15 - isnow * 0.05
+!      ab=1.0 - ( 1.0 - isnow ) * 0.25 - isnow * 0.10
       
-!      ab= 1.0 - ( 1.0 - isnow ) * 0.30 - isnow * 0.15
+      ab= 1.0 - ( 1.0 - isnow ) * 0.30 - isnow * 0.10
+      
+!      ab = 1.0
       !---------------------------------------------------------------------
       ! latent heat calculation, sublimation processes and precipitation
       !---------------------------------------------------------------------
@@ -643,13 +655,13 @@ c     New ice temperature.
       sf= hsold/(hsold+0.02)
       
       Qrad= ab*( sf*(1.-0.85)+
-     &       (1.-sf)*(1.-albedoi) )*SW(i,j)/850.
+     &       (1.-sf)*(1.-albedoi) )*SW(i,j)/880.
      
       !-----------------------------------------------------
       ! Solar radiation transmitted below the surface layer
       !-----------------------------------------------------
       ftrice      =  (SW(i,j)) * ( 1.0 - ab)*( sf*(1.-0.85)+
-     &       (1.-sf)*(1.-albedoi) ) / 850.
+     &       (1.-sf)*(1.-albedoi) ) / 880.
       radtr_s(0) =  ftrice
       zzs = 0.0
       DO layer = 1, nlsno
@@ -696,14 +708,14 @@ c     New ice temperature.
          Rad(k) = radab_s(ns-k+1) !k/20. !swradab_s(ns-k+1)
         if (i .eq. 14 .and. j .eq. 11 .and. m .eq. 9
      &  .and. Rad(k) .ne. 0.) then
-        write(*,*) "Rad(k) snow", Rad(k), k
+!        write(*,*) "Rad(k) snow", Rad(k), k
       end if
       ENDDO
       DO k=ni,1,-1
          Rad(k) = radab_phy_i(ni-k+1) !k/20. !swradab_i(ni-k+1)
          if (i .eq. 14 .and. j .eq. 11 .and. m .eq. 9
      &  .and. Rad(k) .ne. 0.) then
-        write(*,*) "Rad(k) ice", Rad(k), k
+!        write(*,*) "Rad(k) ice", Rad(k), k
       end if
       ENDDO
       do k=1,lice_top
@@ -757,7 +769,7 @@ c     Latent Heat:
       fsens=-rho2*cp*CDH(tsu,TA(i,j))*(wind/100.)*(tsu-(TA(i,j)+tzero))
       flat= rho2*lv*CDL(tsu,TA(i,j))*(wind/100.)*(q0-Q2m(i,j))
       flat   =  MIN( -flat , 0.d0 )
-      Fnet=Qrad + (netlw + fsens + flat) + 5
+      Fnet=Qrad + (netlw + fsens + flat)
       if (i .eq. 14 .and. j .eq. 11 .and. m .eq. 9) then
         write(*,*) "Ta(i,j)", Ta(i,j)
         write(*,*) "tiold(lice_top)", tiold(lice_top)
@@ -927,11 +939,13 @@ c     Latent Heat:
          enddo
 
       if (i .eq. 14 .and. j .eq. 11 .and. m .eq. 9) then
-          write(*,*) "ftot", ftot
-          write(*,*) "sume", sume
+!          write(*,*) "ftot", ftot
+!          write(*,*) "sume", sume
       end if
       if ( ftot>(-sume) ) then
+            if (i .eq. 14 .and. j .eq. 11) then
         write(*,*) "LOL TOO MUCH", m, i, j
+      end if
          wmesh=0.d0
          sume=0.d0
          sumh=0.d0
@@ -1284,8 +1298,17 @@ c     Latent Heat:
         enddo
 
         if (maxvel.lt.1d-12) then
+        if (i .eq. 14 .and. j .eq. 11 .and. m .eq. 9) then
+            write(210,*) iteration
+        end if 
+        
         exit
         endif
+        if (iteration .eq. maxiter) then
+        if (i .eq. 14 .and. j .eq. 11 .and. m .eq. 9) then
+            write(210,*) iteration
+        end if 
+        end if
 
        timid  = tinew
        wold   = wmesh
@@ -1388,9 +1411,7 @@ c     Latent Heat:
             write(*,*) tinew(k),"tiNEW", k,i,j,m 
         end if
       enddo !1,lice_top
-            if (i .eq. 14 .and. j .eq. 11) then
-            write(*,*) "Aice_pre", Aice(m,i,j), i,j,m 
-        end if
+
       dHsnowT = dHsnowT + dHsnow
       
       do k=1,ni
@@ -1563,7 +1584,7 @@ c     Thickness of the new ice
 !      if (aice(1,i,j) < 0.0000000000001) then
 !        new_ice = .true.
 !      end if
-      Hice(1,i,j)=Hice(1,i,j)+dHiceN
+      Hice(1,i,j)=Hice(1,i,j)+dHiceN*aice(0,i,j)
       aice(1,i,j)= aice(1,i,j)+ MIN(delta, aice(0,i,j))
       aice(0,i,j)= MAX(0.,aice(0,i,j)- delta)
 
@@ -1584,7 +1605,7 @@ c     New ice temperature - for T in situ only!
   !!!    Tice(1,i,j)=Q/Hice(1,i,j)
       Tsnow(1,i,j)=-10.
       do k=ni+1,ns
-            TsnowFE(1,i,j,k)=-10.
+            TsnowFE(1,i,j,k-ni)=-10.
       enddo
       else
 !      if (aice(1,i,j) < 0.0000000000001) then
@@ -1618,7 +1639,7 @@ c     New ice temperature - for T in situ only! Should be corrected
   !!!    Tice(1,i,j)=Q/Hice(1,i,j)
       Tsnow(1,i,j)=-10.
       do k=ni+1,ns
-            TsnowFE(1,i,j,k)=-10.
+            TsnowFE(1,i,j,k-ni)=-10.
       enddo
 
 
@@ -1643,10 +1664,10 @@ c	end if
       aavg=0.
             do m=1,mgrad
             aavg = Aice(m,i,j) + aavg
-            write(*,*) "Aice_after", Aice(m,i,j), i,j,m 
+!            write(*,*) "Aice_after", Aice(m,i,j), i,j,m 
             end do
             write(*,*) "aavg_after",aavg,i,j,m 
-        end if
+       end if
       return
       end
 
